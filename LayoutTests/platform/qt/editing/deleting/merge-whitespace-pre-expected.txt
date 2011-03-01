@@ -1,0 +1,21 @@
+layer at (0,0) size 800x600
+  RenderView at (0,0) size 800x600
+layer at (0,0) size 800x600
+  RenderBlock {HTML} at (0,0) size 800x600
+    RenderBody {BODY} at (8,8) size 784x579
+      RenderBlock {P} at (0,0) size 784x42
+        RenderText {#text} at (0,0) size 777x42
+          text run at (0,0) width 395: "This test places the caret before the 'b' in 'bar' and Delete. "
+          text run at (395,0) width 382: "Afterword, 'foobar' should be in the first paragraph and"
+          text run at (0,21) width 197: "'baz' should be in the second."
+      RenderBlock {DIV} at (0,58) size 784x50
+        RenderBlock {DIV} at (0,0) size 784x21
+          RenderText {#text} at (0,0) size 21x21
+            text run at (0,0) width 21: "foo"
+          RenderInline {SPAN} at (0,0) size 18x16
+            RenderText {#text} at (21,3) size 18x16
+              text run at (21,3) width 18: "bar"
+        RenderBlock {PRE} at (0,34) size 784x16
+          RenderText {#text} at (0,0) size 21x16
+            text run at (0,0) width 21: "baz"
+caret: position 3 of child 0 {#text} of child 1 {DIV} of child 2 {DIV} of body

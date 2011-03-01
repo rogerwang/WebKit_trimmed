@@ -1,0 +1,73 @@
+/*
+ * Copyright (C) 2010 Google Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ *     * Redistributions of source code must retain the above copyright
+ * notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above
+ * copyright notice, this list of conditions and the following disclaimer
+ * in the documentation and/or other materials provided with the
+ * distribution.
+ *     * Neither the name of Google Inc. nor the names of its
+ * contributors may be used to endorse or promote products derived from
+ * this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include "config.h"
+
+#if USE(ACCELERATED_COMPOSITING)
+
+#include "CanvasLayerChromium.h"
+
+#include "cc/CCLayerImpl.h"
+#include "GraphicsContext3D.h"
+#include "LayerRendererChromium.h"
+
+namespace WebCore {
+
+unsigned CanvasLayerChromium::m_shaderProgramId = 0;
+
+CanvasLayerChromium::CanvasLayerChromium(GraphicsLayerChromium* owner)
+    : LayerChromium(owner)
+    , m_textureChanged(true)
+    , m_textureId(0)
+{
+}
+
+CanvasLayerChromium::~CanvasLayerChromium()
+{
+}
+
+void CanvasLayerChromium::draw()
+{
+    ASSERT(layerRenderer());
+    const CanvasLayerChromium::Program* program = layerRenderer()->canvasLayerProgram();
+    ASSERT(program && program->initialized());
+    GraphicsContext3D* context = layerRendererContext();
+    GLC(context, context->activeTexture(GraphicsContext3D::TEXTURE0));
+    GLC(context, context->bindTexture(GraphicsContext3D::TEXTURE_2D, m_textureId));
+    layerRenderer()->useShader(program->program());
+    GLC(context, context->uniform1i(program->fragmentShader().samplerLocation(), 0));
+    drawTexturedQuad(context, layerRenderer()->projectionMatrix(), ccLayerImpl()->drawTransform(),
+                     bounds().width(), bounds().height(), ccLayerImpl()->drawOpacity(),
+                     program->vertexShader().matrixLocation(),
+                     program->fragmentShader().alphaLocation());
+}
+
+}
+#endif // USE(ACCELERATED_COMPOSITING)

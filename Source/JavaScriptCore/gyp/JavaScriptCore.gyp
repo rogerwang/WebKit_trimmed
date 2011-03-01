@@ -1,0 +1,113 @@
+{
+  'includes': [
+    '../JavaScriptCore.gypi',
+  ],
+  'xcode_config_file': '<(DEPTH)/JavaScriptCore/Configurations/DebugRelease.xcconfig',
+  'targets': [
+    {
+      'target_name': 'JavaScriptCore',
+      'type': 'shared_library',
+      'include_dirs': [
+        '<(DEPTH)', # Some paths in API include JavaScriptCore/
+        '<(DEPTH)/JavaScriptCore',
+        '<(DEPTH)/JavaScriptCore/ForwardingHeaders',
+        '<(DEPTH)/JavaScriptCore/API',
+        '<(DEPTH)/JavaScriptCore/assembler',
+        '<(DEPTH)/JavaScriptCore/collector/handles',
+        '<(DEPTH)/JavaScriptCore/bytecode',
+        '<(DEPTH)/JavaScriptCore/bytecompiler',
+        '<(DEPTH)/JavaScriptCore/debugger',
+        '<(DEPTH)/JavaScriptCore/icu',
+        '<(DEPTH)/JavaScriptCore/interpreter',
+        '<(DEPTH)/JavaScriptCore/jit',
+        '<(DEPTH)/JavaScriptCore/parser',
+        '<(DEPTH)/JavaScriptCore/profiler',
+        '<(DEPTH)/JavaScriptCore/runtime',
+        '<(DEPTH)/JavaScriptCore/wtf',
+        '<(DEPTH)/JavaScriptCore/wtf/unicode',
+        '<(PRODUCT_DIR)/DerivedSources/JavaScriptCore',
+      ],
+      'sources': [
+        '<@(javascriptcore_files)',
+        '$(SDKROOT)/System/Library/Frameworks/CoreFoundation.framework',
+        '$(SDKROOT)/System/Library/Frameworks/Foundation.framework',
+        'libedit.dylib',
+        'libicucore.dylib',
+        'libobjc.dylib',
+      ],
+      'xcode_config_file': '<(DEPTH)/JavaScriptCore/Configurations/JavaScriptCore.xcconfig',
+      'sources/': [
+        ['exclude', 'qt'],
+        ['exclude', 'os-win32'],
+        ['exclude', 'wtf/android'],
+        ['exclude', 'wtf/brew'],
+        ['exclude', 'wtf/efl'],
+        ['exclude', 'wtf/gtk'],
+        ['exclude', 'wtf/qt'],
+        ['exclude', 'wtf/haiku'],
+        ['exclude', 'wtf/url'],
+        ['exclude', 'wtf/wince'],
+        ['exclude', 'wtf/wx'],
+        ['exclude', 'wtf/unicode/brew'],
+        ['exclude', 'wtf/unicode/wince'],
+        ['exclude', 'wtf/unicode/glib'],
+        ['exclude', 'wtf/unicode/qt4'],
+        ['exclude', '/(gtk|glib|gobject)/.*\\.(cpp|h)$'],
+        ['exclude', '(Default|Gtk|Chromium|None|Qt|Win|Wx|Symbian)\\.(cpp|mm)$'],
+        ['exclude', 'GCActivityCallback\.cpp'],
+        ['exclude', '.*BSTR.*$'],
+        ['exclude', 'jsc.cpp$'],
+      ],
+      'actions': [{
+        'action_name': 'generate_derived_sources',
+        'inputs': [],
+        'outputs': [],
+        'action': [
+          'sh', 'generate-derived-sources.sh',
+        ],
+      }],
+      'configurations': {
+        'Debug': {},
+        'Relase': {},
+        'Production': {},
+      },
+      'default_configuration': 'Debug',
+      'defines': [
+        'WEBKIT_VERSION_MIN_REQUIRED=WEBKIT_VERSION_LATEST',
+      ],
+      'conditions': [
+        ['OS=="mac"', {
+          'mac_bundle': 1,
+          'xcode_settings': {
+            'USE_HEADERMAP': 'NO',
+            # FIXME: Remove these overrides once JavaScriptCore.xcconfig is
+            # used only by this project.
+            'GCC_PREFIX_HEADER': '<(DEPTH)/JavaScriptCore/JavaScriptCorePrefix.h',
+            'INFOPLIST_FILE': '<(DEPTH)/JavaScriptCore/Info.plist',
+            # This setting mirrors the setting in Base.xcconfig, with
+            # one difference noted below.
+            'WARNING_CFLAGS_BASE': [
+              '-Wall',
+              '-Wextra',
+              '-Wcast-qual',
+              '-Wchar-subscripts',
+              '-Wextra-tokens',
+              '-Wformat=2',
+              '-Winit-self',
+              # FIXME: For some reason, -Wmissing-format-attribute causes a
+              # build error in Assertions.cpp in the GYP build but not in the
+              # non-GYP build.
+              # '-Wmissing-format-attribute',
+              '-Wmissing-noreturn',
+              '-Wpacked',
+              '-Wpointer-arith',
+              '-Wredundant-decls',
+              '-Wundef',
+              '-Wwrite-strings',
+            ],
+          },
+        }],
+      ],
+    },
+  ], # targets
+}

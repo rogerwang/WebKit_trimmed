@@ -1,0 +1,36 @@
+EDITING DELEGATE: shouldBeginEditingInDOMRange:range from 0 of DIV > BODY > HTML > #document to 3 of DIV > BODY > HTML > #document
+EDITING DELEGATE: webViewDidBeginEditing:WebViewDidBeginEditingNotification
+EDITING DELEGATE: webViewDidChangeSelection:WebViewDidChangeSelectionNotification
+EDITING DELEGATE: webViewDidChangeSelection:WebViewDidChangeSelectionNotification
+EDITING DELEGATE: webViewDidChangeSelection:WebViewDidChangeSelectionNotification
+EDITING DELEGATE: shouldDeleteDOMRange:range from 1 of SPAN > DIV > BODY > HTML > #document to 2 of SPAN > DIV > BODY > HTML > #document
+EDITING DELEGATE: webViewDidChangeSelection:WebViewDidChangeSelectionNotification
+EDITING DELEGATE: shouldChangeSelectedDOMRange:(null) toDOMRange:range from 1 of #text > SPAN > DIV > BODY > HTML > #document to 1 of #text > SPAN > DIV > BODY > HTML > #document affinity:NSSelectionAffinityDownstream stillSelecting:FALSE
+EDITING DELEGATE: webViewDidChangeSelection:WebViewDidChangeSelectionNotification
+EDITING DELEGATE: webViewDidChange:WebViewDidChangeNotification
+layer at (0,0) size 800x600
+  RenderView at (0,0) size 800x600
+layer at (0,0) size 800x600
+  RenderBlock {HTML} at (0,0) size 800x600
+    RenderBody {BODY} at (8,8) size 784x584
+      RenderBlock {DIV} at (0,0) size 784x279 [border: (2px solid #FF0000)]
+        RenderInline {SPAN} at (0,0) size 260x252
+          RenderText {#text} at (14,14) size 12x32
+            text run at (14,14) width 12: "a"
+          RenderText {#text} at (26,14) size 47x32
+            text run at (26,14) width 47: "new "
+          RenderBR {BR} at (0,0) size 0x0
+          RenderText {#text} at (14,124) size 71x32
+            text run at (14,124) width 71: "nation "
+          RenderInline {I} at (0,0) size 0x0
+            RenderText {#text} at (0,0) size 0x0
+          RenderText {#text} at (0,0) size 0x0
+          RenderImage {IMG} at (85,45) size 76x103
+          RenderText {#text} at (161,124) size 113x32
+            text run at (161,124) width 113: " conceived "
+          RenderBR {BR} at (274,148) size 0x0
+          RenderText {#text} at (14,234) size 65x32
+            text run at (14,234) width 65: "nation"
+          RenderImage {IMG} at (79,155) size 76x103
+        RenderText {#text} at (0,0) size 0x0
+caret: position 1 of child 0 {#text} of child 1 {SPAN} of child 1 {DIV} of body

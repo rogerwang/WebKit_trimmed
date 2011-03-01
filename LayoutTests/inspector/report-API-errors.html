@@ -1,0 +1,34 @@
+<html>
+<head>
+<script src="../http/tests/inspector/inspector-test.js"></script>
+<script>
+
+function test()
+{
+
+    console.error = function()
+    {
+        InspectorTest.addResult(String.sprintf.apply(this, arguments));
+    }
+
+    ConsoleAgent.setMonitoringXHREnabled(1);
+    ConsoleAgent.setMonitoringXHREnabled();
+    ConsoleAgent.setMonitoringXHREnabled(true, "not a function");
+    ConsoleAgent.setMonitoringXHREnabled(true, undefined);
+    ConsoleAgent.setMonitoringXHREnabled(false, undefined);
+    InspectorBackend.dispatch('{"type": "event", "domain": "wrongDomain", "event": "something-strange", "data": {}}');
+    InspectorBackend.dispatch('{"type": "event", "domain": "Inspector", "event": "something-strange", "data": {}}');
+
+    InspectorTest.completeTest();
+}
+
+</script>
+</head>
+
+<body onload="runTest()">
+<p>
+Tests that InspectorBackendStub is catching incorrect arguments.
+</p>
+
+</body>
+</html>

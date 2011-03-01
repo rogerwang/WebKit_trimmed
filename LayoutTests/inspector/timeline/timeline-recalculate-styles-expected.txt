@@ -1,0 +1,15 @@
+Tests the Timeline API instrumentation of a style recalculation event
+
+Test data
+RecalculateStyles Properties:
+{
+    startTime : <number>
+    data : {
+    }
+    children : <object>
+    endTime : <number>
+    type : 2
+    usedHeapSize : <number>
+    totalHeapSize : <number>
+}
+

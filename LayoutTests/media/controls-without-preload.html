@@ -1,0 +1,29 @@
+<html>
+    <head>
+        <script src=media-file.js></script>
+        <script>
+            if (window.layoutTestController)
+                layoutTestController.waitUntilDone();
+
+            function start()
+            {
+                setSrcByTagName("video", findMediaFile("video", "content/test"));
+                video = document.getElementsByTagName('video')[0];
+                video.load();
+                video.play();
+                video.addEventListener("canplaythrough", finish);
+            }
+
+            function finish()
+            {
+                if (window.layoutTestController)
+                    layoutTestController.notifyDone();
+            }
+        </script>
+    </head>
+
+    <body onload="start()">
+        <p>The controls should not depend on preload value.</p>
+        <video preload=none controls ></video>
+    </body>
+</html>

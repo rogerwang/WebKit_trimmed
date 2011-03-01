@@ -1,0 +1,62 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<script src="../../http/tests/inspector/inspector-test.js"></script>
+<script>
+function test()
+{
+    var searchResults = [];
+    function addSearchResult(markupValue)
+    {
+        if (markupValue.indexOf("ter" + "mi" + "nator") !== -1) {
+            InspectorTest.addResult("====================================");
+            InspectorTest.addResult("Results:");
+            InspectorTest.addResults(searchResults);
+            InspectorTest.completeTest();
+            return;
+         }
+        searchResults.push(markupValue);
+    }
+
+    WebInspector.addNodesToSearchResult = function(nodeIds)
+    {
+        for (var i = 0; i < nodeIds.length; ++i) {
+            var node = WebInspector.domAgent.nodeForId(nodeIds[i]);
+            if (node.nodeType === Node.TEXT_NODE)
+                searchResults.push(node.nodeValue);
+            else
+                DOMAgent.getOuterHTML(node.id, addSearchResult);
+        }
+    }
+
+    // Plain text.
+    DOMAgent.performSearch("Foo" + "Bar", true);
+    // Partial text.
+    DOMAgent.performSearch("oo" + "Ba", true);
+    // Start tag.
+    DOMAgent.performSearch("<inpu" + "t", true);
+    // Partial tag.
+    DOMAgent.performSearch("npu" + "t", true);
+    // Exact attribute name.
+    DOMAgent.performSearch("valu" + "e", true);
+    // Exact attribute val<>ue.
+    DOMAgent.performSearch("In" + "putVa" + "l", true);
+    // Partial attribute val<>ue.
+    DOMAgent.performSearch("n" + "putVa" + "l", true);
+    // Terminator.
+    DOMAgent.performSearch("ter" + "mi" + "nator", true);
+}
+</script>
+</head>
+
+<body onload="runTest()">
+<p>
+Tests that elements panel search is returning proper results.
+</p>
+
+<div>FooBar</div>
+<input value="InputVal">
+<div id="terminator"></div>
+
+</body>
+</html>
