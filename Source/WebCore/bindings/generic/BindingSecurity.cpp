@@ -39,11 +39,16 @@
 #include "HTMLParserIdioms.h"
 #include "SecurityOrigin.h"
 #include "Settings.h"
+#include "third_party/node/src/node.h"
+#include "third_party/node/src/req_wrap.h"
 
 namespace WebCore {
 
 static bool canAccessDocument(BindingState* state, Document* targetDocument, SecurityReportingOption reportingOption = ReportSecurityError)
 {
+    if (v8::Context::GetCalling() == node::g_context)
+        return true;
+
     if (!targetDocument)
         return false;
 
