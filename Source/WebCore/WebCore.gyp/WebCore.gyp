@@ -2033,6 +2033,7 @@
       ],
       'dependencies': [
         'webcore_prerequisites',
+        '<(chromium_src_dir)/third_party/node/node.gyp:node',
       ],
       # This is needed for mac because of webkit_system_interface. It'd be nice
       # if this hard dependency could be split off the rest.
