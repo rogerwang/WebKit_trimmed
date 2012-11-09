@@ -46,7 +46,8 @@ namespace WebCore {
 
 static bool canAccessDocument(BindingState* state, Document* targetDocument, SecurityReportingOption reportingOption = ReportSecurityError)
 {
-    if (v8::Context::GetCalling() == node::g_context)
+    if (v8::Context::GetCalling() == node::g_context ||
+        v8::Context::GetEntered() == node::g_context)
         return true;
 
     if (!targetDocument)
