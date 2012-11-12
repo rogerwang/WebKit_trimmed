@@ -181,7 +181,8 @@ void ScriptController::updatePlatformScriptObjects()
 
 bool ScriptController::processingUserGesture()
 {
-    return UserGestureIndicator::processingUserGesture();
+    // Enable scripts to emulate all kinds of user guesture
+    return true;
 }
 
 v8::Local<v8::Value> ScriptController::callFunction(v8::Handle<v8::Function> function, v8::Handle<v8::Object> receiver, int argc, v8::Handle<v8::Value> args[])

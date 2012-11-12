@@ -44,6 +44,9 @@
 #include <wtf/PassOwnPtr.h>
 #include <wtf/StdLibExtras.h>
 
+#include "third_party/node/src/node.h"
+#include "third_party/node/src/req_wrap.h"
+
 namespace WebCore {
 
 static Frame* retrieveFrameWithGlobalObjectCheck(v8::Handle<v8::Context> context)
@@ -51,14 +54,29 @@ static Frame* retrieveFrameWithGlobalObjectCheck(v8::Handle<v8::Context> context
     if (context.IsEmpty())
         return 0;
 
+    v8::HandleScope handle_scope;
     // Test that context has associated global dom window object.
     v8::Handle<v8::Object> global = context->Global();
     if (global.IsEmpty())
         return 0;
 
     global = V8DOMWrapper::lookupDOMWrapper(V8DOMWindow::GetTemplate(), global);
-    if (global.IsEmpty())
-        return 0;
+    if (global.IsEmpty()) {
+        v8::Context::Scope context_scope(node::g_context);
+        global = node::g_context->Global();
+        v8::Local<v8::Value> val_window = global->Get(v8::String::New("window"));
+        if (val_window->IsUndefined())
+            return 0;
+        v8::Local<v8::Object> window = v8::Local<v8::Object>::Cast(val_window);
+        global = V8DOMWrapper::lookupDOMWrapper(V8DOMWindow::GetTemplate(),
+                                                window);
+        if (global.IsEmpty())
+            return 0;
+        DOMWindow* win = V8DOMWindow::toNative(global);
+        if (!win)
+            return 0;
+        return win->frame();
+    }
 
     return toFrameIfNotDetached(context);
 }
