@@ -61,6 +61,9 @@
 #include <wtf/text/StringHash.h>
 #include <wtf/text/WTFString.h>
 
+#include "third_party/node/src/node.h"
+#include "third_party/node/src/req_wrap.h"
+
 namespace WTF {
 
 template<> struct SequenceMemoryInstrumentationTraits<v8::String*> {
@@ -271,6 +274,17 @@ v8::Handle<v8::Object> toInnerGlobalObject(v8::Handle<v8::Context> context)
 
 DOMWindow* toDOMWindow(v8::Handle<v8::Context> context)
 {
+    if (context == node::g_context) {
+        v8::Context::Scope context_scope(node::g_context);
+        v8::Handle<v8::Object> global = node::g_context->Global();
+        v8::Local<v8::Value> val_window = global->Get(v8::String::New("window"));
+        ASSERT (!val_window->IsUndefined());
+        v8::Local<v8::Object> window = v8::Local<v8::Object>::Cast(val_window);
+        global = V8DOMWrapper::lookupDOMWrapper(V8DOMWindow::GetTemplate(),
+                                                window);
+        ASSERT (!global.IsEmpty());
+        return V8DOMWindow::toNative(global);
+    }
     v8::Handle<v8::Object> global = context->Global();
     ASSERT(!global.IsEmpty());
     global = V8DOMWrapper::lookupDOMWrapper(V8DOMWindow::GetTemplate(), global);
