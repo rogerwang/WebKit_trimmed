@@ -190,9 +190,17 @@ void Console::addMessage(MessageType type, MessageLevel level, PassRefPtr<Script
     }
 
     String message;
-    if (arguments->getFirstArgumentAsString(message))
-        page->chrome()->client()->addMessageToConsole(ConsoleAPIMessageSource, type, level, message, lastCaller.lineNumber(), lastCaller.sourceURL());
+    if (arguments->getFirstArgumentAsString(message)) {
+        for (unsigned i = 1; i < arguments->argumentCount(); ++i) {
+            String argAsString;
+            if (arguments->argumentAt(i).getString(arguments->globalState(), argAsString)) {
+                message.append(" ");
+                message.append(argAsString);
+            }
+        }
 
+        page->chrome()->client()->addMessageToConsole(ConsoleAPIMessageSource, type, level, message, lastCaller.lineNumber(), lastCaller.sourceURL());
+    }
     InspectorInstrumentation::addMessageToConsole(page, ConsoleAPIMessageSource, type, level, message, arguments, callStack);
 }
 
