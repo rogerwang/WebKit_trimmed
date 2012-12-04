@@ -46,6 +46,7 @@
 #include "CodeBlock.h"
 #include "CompactJITCodeMap.h"
 #include "Interpreter.h"
+#include "JITDisassembler.h"
 #include "JSInterfaceJIT.h"
 #include "Opcode.h"
 #include "Profiler.h"
@@ -487,18 +488,17 @@ namespace JSC {
         // returns the slow cases.
         JumpList emitInt32PutByVal(Instruction* currentInstruction, PatchableJump& badType)
         {
-            return emitGenericContiguousPutByVal<Int32Shape>(currentInstruction, badType);
+            return emitGenericContiguousPutByVal(currentInstruction, badType, Int32Shape);
         }
         JumpList emitDoublePutByVal(Instruction* currentInstruction, PatchableJump& badType)
         {
-            return emitGenericContiguousPutByVal<DoubleShape>(currentInstruction, badType);
+            return emitGenericContiguousPutByVal(currentInstruction, badType, DoubleShape);
         }
         JumpList emitContiguousPutByVal(Instruction* currentInstruction, PatchableJump& badType)
         {
-            return emitGenericContiguousPutByVal<ContiguousShape>(currentInstruction, badType);
+            return emitGenericContiguousPutByVal(currentInstruction, badType);
         }
-        template<IndexingType indexingShape>
-        JumpList emitGenericContiguousPutByVal(Instruction*, PatchableJump& badType);
+        JumpList emitGenericContiguousPutByVal(Instruction*, PatchableJump& badType, IndexingType indexingShape = ContiguousShape);
         JumpList emitArrayStoragePutByVal(Instruction*, PatchableJump& badType);
         JumpList emitIntTypedArrayPutByVal(Instruction*, PatchableJump& badType, const TypedArrayDescriptor&, size_t elementSize, TypedArraySignedness, TypedArrayRounding);
         JumpList emitFloatTypedArrayPutByVal(Instruction*, PatchableJump& badType, const TypedArrayDescriptor&, size_t elementSize);
@@ -647,6 +647,7 @@ namespace JSC {
         void emit_op_call_put_result(Instruction*);
         void emit_op_catch(Instruction*);
         void emit_op_construct(Instruction*);
+        void emit_op_get_callee(Instruction*);
         void emit_op_create_this(Instruction*);
         void emit_op_convert_this(Instruction*);
         void emit_op_create_arguments(Instruction*);
@@ -945,6 +946,7 @@ namespace JSC {
         int m_uninterruptedConstantSequenceBegin;
 #endif
 #endif
+        OwnPtr<JITDisassembler> m_disassembler;
         WeakRandom m_randomGenerator;
         static CodeRef stringGetByValStubGenerator(JSGlobalData*);
 

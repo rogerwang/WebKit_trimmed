@@ -26,6 +26,7 @@
 #ifndef EventHandler_h
 #define EventHandler_h
 
+#include "Cursor.h"
 #include "DragActions.h"
 #include "DragState.h"
 #include "FocusDirection.h"
@@ -90,6 +91,7 @@ extern const int GeneralDragHysteresis;
 
 enum HitTestScrollbars { ShouldHitTestScrollbars, DontHitTestScrollbars };
 enum AppendTrailingWhitespace { ShouldAppendTrailingWhitespace, DontAppendTrailingWhitespace };
+enum CheckDragHysteresis { ShouldCheckDragHysteresis, DontCheckDragHysteresis };
 
 class EventHandler {
     WTF_MAKE_NONCOPYABLE(EventHandler);
@@ -141,6 +143,7 @@ public:
     void resizeLayerDestroyed();
 
     IntPoint currentMousePosition() const;
+    Cursor currentMouseCursor() const { return m_currentMouseCursor; }
 
     static Frame* subframeForTargetNode(Node*);
     static Frame* subframeForHitTestResult(const MouseEventWithHitTestResults&);
@@ -168,11 +171,15 @@ public:
     bool handleGestureEvent(const PlatformGestureEvent&);
     bool handleGestureTap(const PlatformGestureEvent&);
     bool handleGestureLongPress(const PlatformGestureEvent&);
+    bool handleGestureLongTap(const PlatformGestureEvent&);
     bool handleGestureTwoFingerTap(const PlatformGestureEvent&);
     bool handleGestureScrollUpdate(const PlatformGestureEvent&);
+    bool isScrollbarHandlingGestures() const;
 #endif
 
 #if ENABLE(TOUCH_ADJUSTMENT)
+    bool shouldApplyTouchAdjustment(const PlatformGestureEvent&) const;
+
     bool bestClickableNodeForTouchPoint(const IntPoint& touchCenter, const IntSize& touchRadius, IntPoint& targetPoint, Node*& targetNode);
     bool bestContextMenuNodeForTouchPoint(const IntPoint& touchCenter, const IntSize& touchRadius, IntPoint& targetPoint, Node*& targetNode);
     bool bestZoomableAreaForTouchPoint(const IntPoint& touchCenter, const IntSize& touchRadius, IntRect& targetArea, Node*& targetNode);
@@ -280,7 +287,7 @@ private:
     static bool isKeyboardOptionTab(KeyboardEvent*);
     static bool eventInvertsTabsToLinksClientCallResult(KeyboardEvent*);
 
-    void fakeMouseMoveEventTimerFired(Timer<EventHandler>*);
+    void fakeMouseMoveEventTimerFired(DeferrableOneShotTimer<EventHandler>*);
     void cancelFakeMouseMoveEvent();
 
 #if ENABLE(TOUCH_EVENTS)
@@ -302,7 +309,7 @@ private:
 
     void freeClipboard();
 
-    bool handleDrag(const MouseEventWithHitTestResults&);
+    bool handleDrag(const MouseEventWithHitTestResults&, CheckDragHysteresis);
 #endif
     bool handleMouseUp(const MouseEventWithHitTestResults&);
 #if ENABLE(DRAG_SUPPORT)
@@ -403,7 +410,7 @@ private:
     bool m_mouseDownMayStartAutoscroll;
     bool m_mouseDownWasInSubframe;
 
-    Timer<EventHandler> m_fakeMouseMoveEventTimer;
+    DeferrableOneShotTimer<EventHandler> m_fakeMouseMoveEventTimer;
 
 #if ENABLE(SVG)
     bool m_svgPan;
@@ -420,6 +427,7 @@ private:
     RefPtr<Node> m_lastNodeUnderMouse;
     RefPtr<Frame> m_lastMouseMoveEventSubframe;
     RefPtr<Scrollbar> m_lastScrollbarUnderMouse;
+    Cursor m_currentMouseCursor;
 
     int m_clickCount;
     RefPtr<Node> m_clickNode;
@@ -457,10 +465,13 @@ private:
 
 #if ENABLE(GESTURE_EVENTS)
     RefPtr<Node> m_scrollGestureHandlingNode;
+    RefPtr<Scrollbar> m_scrollbarHandlingScrollGesture;
 #endif
 
-    double m_maxMouseMovedDuration;
+    double m_mouseMovedDurationRunningAverage;
     PlatformEvent::Type m_baseEventType;
+    bool m_didStartDrag;
+    bool m_didLongPressInvokeContextMenu;
 };
 
 } // namespace WebCore

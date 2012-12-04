@@ -269,6 +269,26 @@ struct Node {
         convertToStructureTransitionWatchpoint(structureSet().singletonStructure());
     }
     
+    void convertToGetByOffset(unsigned storageAccessDataIndex, NodeIndex storage)
+    {
+        ASSERT(m_op == GetById || m_op == GetByIdFlush);
+        m_opInfo = storageAccessDataIndex;
+        children.setChild1(Edge(storage));
+        m_op = GetByOffset;
+        m_flags &= ~NodeClobbersWorld;
+    }
+    
+    void convertToPutByOffset(unsigned storageAccessDataIndex, NodeIndex storage)
+    {
+        ASSERT(m_op == PutById || m_op == PutByIdDirect);
+        m_opInfo = storageAccessDataIndex;
+        children.setChild3(children.child2());
+        children.setChild2(children.child1());
+        children.setChild1(Edge(storage));
+        m_op = PutByOffset;
+        m_flags &= ~NodeClobbersWorld;
+    }
+    
     JSCell* weakConstant()
     {
         ASSERT(op() == WeakJSConstant);
@@ -503,23 +523,6 @@ struct Node {
         return bitwise_cast<WriteBarrier<Unknown>*>(m_opInfo);
     }
 
-    bool hasScopeChainDepth()
-    {
-        return op() == GetScope;
-    }
-    
-    unsigned scopeChainDepth()
-    {
-        ASSERT(hasScopeChainDepth());
-        return m_opInfo;
-    }
-
-    Edge scope()
-    {
-        ASSERT(op() == GetScopeRegisters);
-        return child1();
-    }
-
     bool hasResult()
     {
         return m_flags & NodeResultMask;
@@ -543,6 +546,11 @@ struct Node {
     bool hasBooleanResult()
     {
         return (m_flags & NodeResultMask) == NodeResultBoolean;
+    }
+
+    bool hasStorageResult()
+    {
+        return (m_flags & NodeResultMask) == NodeResultStorage;
     }
 
     bool isJump()
@@ -676,15 +684,23 @@ struct Node {
         return mergeSpeculation(m_opInfo2, prediction);
     }
     
-    bool hasFunctionCheckData()
+    bool hasFunction()
     {
-        return op() == CheckFunction;
+        switch (op()) {
+        case CheckFunction:
+        case InheritorIDWatchpoint:
+            return true;
+        default:
+            return false;
+        }
     }
 
-    JSFunction* function()
+    JSCell* function()
     {
-        ASSERT(hasFunctionCheckData());
-        return reinterpret_cast<JSFunction*>(m_opInfo);
+        ASSERT(hasFunction());
+        JSCell* result = reinterpret_cast<JSFunction*>(m_opInfo);
+        ASSERT(JSValue(result).isFunction());
+        return result;
     }
 
     bool hasStructureTransitionData()
@@ -729,6 +745,7 @@ struct Node {
         case StructureTransitionWatchpoint:
         case ForwardStructureTransitionWatchpoint:
         case ArrayifyToStructure:
+        case NewObject:
             return true;
         default:
             return false;
@@ -1124,17 +1141,17 @@ struct Node {
         return nodeCanSpeculateInteger(arithNodeFlags());
     }
     
-    void dumpChildren(FILE* out)
+    void dumpChildren(PrintStream& out)
     {
         if (!child1())
             return;
-        fprintf(out, "@%u", child1().index());
+        out.printf("@%u", child1().index());
         if (!child2())
             return;
-        fprintf(out, ", @%u", child2().index());
+        out.printf(", @%u", child2().index());
         if (!child3())
             return;
-        fprintf(out, ", @%u", child3().index());
+        out.printf(", @%u", child3().index());
     }
     
     // Used to look up exception handling information (currently implemented as a bytecode index).

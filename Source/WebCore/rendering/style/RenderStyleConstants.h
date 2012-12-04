@@ -81,7 +81,7 @@ enum PseudoId {
     PUBLIC_PSEUDOID_MASK = ((1 << FIRST_INTERNAL_PSEUDOID) - 1) & ~((1 << FIRST_PUBLIC_PSEUDOID) - 1)
 };
 
-enum ColumnSpan { ColumnSpanOne = 0, ColumnSpanAll};
+enum ColumnSpan { ColumnSpanNone = 0, ColumnSpanAll };
 
 enum EBorderCollapse { BSEPARATE = 0, BCOLLAPSE = 1 };
 
@@ -152,6 +152,9 @@ enum EFillLayerType {
 
 // CSS3 Background Values
 enum EFillSizeType { Contain, Cover, SizeLength, SizeNone };
+
+// CSS3 Background Position
+enum BackgroundEdgeOrigin { TopEdge, RightEdge, BottomEdge, LeftEdge };
 
 // CSS3 Marquee Properties
 
@@ -345,6 +348,12 @@ enum TextDecorationStyle {
     TextDecorationStyleWavy
 #endif // CSS3_TEXT
 };
+
+#if ENABLE(CSS3_TEXT)
+enum ETextAlignLast {
+    TextAlignLastAuto, TextAlignLastStart, TextAlignLastEnd, TextAlignLastLeft, TextAlignLastRight, TextAlignLastCenter, TextAlignLastJustify
+};
+#endif // CSS3_TEXT
 
 enum EPageBreak {
     PBAUTO, PBALWAYS, PBAVOID

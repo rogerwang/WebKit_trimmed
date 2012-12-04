@@ -29,6 +29,8 @@
 
 #include "EwkViewImpl.h"
 #include "LayerTreeCoordinatorProxy.h"
+#include "NotImplemented.h"
+#include "ewk_view.h"
 
 using namespace WebCore;
 using namespace EwkViewCallbacks;
@@ -48,10 +50,22 @@ void PageClientLegacyImpl::didCommitLoad()
 void PageClientLegacyImpl::updateViewportSize(const WebCore::IntSize& size)
 {
 #if USE(TILED_BACKING_STORE)
-    m_viewImpl->page()->drawingArea()->setVisibleContentsRect(IntRect(m_viewImpl->scrollPosition(), size), m_viewImpl->scaleFactor(), FloatPoint());
+    m_viewImpl->page()->drawingArea()->setVisibleContentsRect(IntRect(m_viewImpl->discretePagePosition(), size), m_viewImpl->scaleFactor(), FloatPoint());
 #else
     UNUSED_PARAM(size);
 #endif
+}
+
+FloatRect PageClientLegacyImpl::convertToDeviceSpace(const FloatRect& viewRect)
+{
+    notImplemented();
+    return viewRect;
+}
+
+FloatRect PageClientLegacyImpl::convertToUserSpace(const FloatRect& viewRect)
+{
+    notImplemented();
+    return viewRect;
 }
 
 void PageClientLegacyImpl::didChangeViewportProperties(const WebCore::ViewportAttributes&)
@@ -62,18 +76,17 @@ void PageClientLegacyImpl::didChangeViewportProperties(const WebCore::ViewportAt
 void PageClientLegacyImpl::didChangeContentsSize(const WebCore::IntSize& size)
 {
 #if USE(TILED_BACKING_STORE)
-    // m_viewImpl->informContentSizeChanged will be called as a result of setContentsSize
     m_viewImpl->page()->drawingArea()->layerTreeCoordinatorProxy()->setContentsSize(FloatSize(size.width(), size.height()));
     m_viewImpl->update();
-#else
-    m_viewImpl->informContentsSizeChange(size);
 #endif
+
+    m_viewImpl->smartCallback<ContentsSizeChanged>().call(size);
 }
 
 #if USE(TILED_BACKING_STORE)
 void PageClientLegacyImpl::pageDidRequestScroll(const IntPoint& position)
 {
-    m_viewImpl->setScrollPosition(position);
+    m_viewImpl->setPagePosition(FloatPoint(position));
     m_viewImpl->update();
 }
 

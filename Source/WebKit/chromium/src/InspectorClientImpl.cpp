@@ -163,6 +163,26 @@ void InspectorClientImpl::autoZoomPageToFitWidth()
         agent->autoZoomPageToFitWidth();
 }
 
+bool InspectorClientImpl::overridesShowPaintRects()
+{
+    return m_inspectedWebView->isAcceleratedCompositingActive();
+}
+
+void InspectorClientImpl::setShowPaintRects(bool show)
+{
+    m_inspectedWebView->setShowPaintRects(show);
+}
+
+bool InspectorClientImpl::canShowFPSCounter()
+{
+    return true;
+}
+
+void InspectorClientImpl::setShowFPSCounter(bool show)
+{
+    m_inspectedWebView->setShowFPSCounter(show);
+}
+
 bool InspectorClientImpl::supportsFrameInstrumentation()
 {
     return true;

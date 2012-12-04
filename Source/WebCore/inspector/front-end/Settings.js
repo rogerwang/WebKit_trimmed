@@ -58,6 +58,7 @@ var Capabilities = {
     timelineCanMonitorMainThread: false,
     canOverrideGeolocation: false,
     canOverrideDeviceOrientation: false,
+    canShowFPSCounter: false
 }
 
 /**
@@ -96,6 +97,7 @@ WebInspector.Settings = function()
     this.showScriptFolders = this.createSetting("showScriptFolders", true);
     this.emulateTouchEvents = this.createSetting("emulateTouchEvents", false);
     this.showPaintRects = this.createSetting("showPaintRects", false);
+    this.showFPSCounter = this.createSetting("showFPSCounter", false);
     this.showShadowDOM = this.createSetting("showShadowDOM", false);
     this.zoomLevel = this.createSetting("zoomLevel", 0);
     this.savedURLs = this.createSetting("savedURLs", {});
@@ -103,6 +105,7 @@ WebInspector.Settings = function()
     this.geolocationOverride = this.createSetting("geolocationOverride", "");
     this.deviceOrientationOverride = this.createSetting("deviceOrientationOverride", "");
     this.showHeapSnapshotObjectsHiddenProperties = this.createSetting("showHeaSnapshotObjectsHiddenProperties", false);
+    this.showNativeSnapshotUninstrumentedSize = this.createSetting("showNativeSnapshotUninstrumentedSize", false);
     this.searchInContentScripts = this.createSetting("searchInContentScripts", false);
     this.textEditorIndent = this.createSetting("textEditorIndent", "    ");
     this.lastDockState = this.createSetting("lastDockState", "");
@@ -199,7 +202,7 @@ WebInspector.ExperimentsSettings = function()
     this.liveNativeMemoryChart = this._createExperiment("liveNativeMemoryChart", "Live native memory chart");
     this.fileSystemInspection = this._createExperiment("fileSystemInspection", "FileSystem inspection");
     this.canvasInspection = this._createExperiment("canvasInspection ", "Canvas inspection");
-    this.sass = this._createExperiment("sass", "Support for SASS");
+    this.sass = this._createExperiment("sass", "Support for Sass");
     this.codemirror = this._createExperiment("codemirror", "Use CodeMirror editor");
     this.cssRegions = this._createExperiment("cssRegions", "CSS Regions Support");
 

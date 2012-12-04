@@ -116,6 +116,52 @@ private:
             return false;
         return !!m_graph.valueOfNumberConstant(nodeIndex);
     }
+    
+    bool isWithinPowerOfTwoForConstant(Node& node, int power)
+    {
+        JSValue immediateValue = node.valueOfJSConstant(codeBlock());
+        if (!immediateValue.isInt32())
+            return false;
+        int32_t intImmediate = immediateValue.asInt32();
+        return intImmediate > -(1 << power) && intImmediate < (1 << power);
+    }
+    
+    bool isWithinPowerOfTwoNonRecursive(NodeIndex nodeIndex, int power)
+    {
+        Node& node = m_graph[nodeIndex];
+        if (node.op() != JSConstant)
+            return false;
+        return isWithinPowerOfTwoForConstant(node, power);
+    }
+    
+    bool isWithinPowerOfTwo(NodeIndex nodeIndex, int power)
+    {
+        Node& node = m_graph[nodeIndex];
+        switch (node.op()) {
+        case JSConstant: {
+            return isWithinPowerOfTwoForConstant(node, power);
+        }
+            
+        case BitAnd: {
+            return isWithinPowerOfTwoNonRecursive(node.child1().index(), power)
+                || isWithinPowerOfTwoNonRecursive(node.child2().index(), power);
+        }
+            
+        case BitRShift:
+        case BitURShift: {
+            Node& shiftAmount = m_graph[node.child2()];
+            if (shiftAmount.op() != JSConstant)
+                return false;
+            JSValue immediateValue = shiftAmount.valueOfJSConstant(codeBlock());
+            if (!immediateValue.isInt32())
+                return false;
+            return immediateValue > 32 - power;
+        }
+            
+        default:
+            return false;
+        }
+    }
 
     SpeculatedType speculatedDoubleTypeForPrediction(SpeculatedType value)
     {
@@ -140,7 +186,7 @@ private:
         NodeFlags flags = node.flags() & NodeBackPropMask;
 
 #if DFG_ENABLE(DEBUG_PROPAGATION_VERBOSE)
-        dataLog("   %s @%u: %s ", Graph::opName(op), m_compileIndex, nodeFlagsAsString(flags));
+        dataLogF("   %s @%u: %s ", Graph::opName(op), m_compileIndex, nodeFlagsAsString(flags));
 #endif
         
         bool changed = false;
@@ -158,7 +204,7 @@ private:
             if (prediction)
                 changed |= mergePrediction(prediction);
             
-            changed |= variableAccessData->mergeFlags(flags);
+            changed |= variableAccessData->mergeFlags(flags & ~NodeUsedAsIntLocally);
             break;
         }
             
@@ -183,8 +229,8 @@ private:
         case BitLShift:
         case BitURShift: {
             changed |= setPrediction(SpecInt32);
-            flags |= NodeUsedAsInt;
-            flags &= ~(NodeUsedAsNumber | NodeNeedsNegZero);
+            flags |= NodeUsedAsInt | NodeUsedAsIntLocally;
+            flags &= ~(NodeUsedAsNumber | NodeNeedsNegZero | NodeUsedAsOther);
             changed |= m_graph[node.child1()].mergeFlags(flags);
             changed |= m_graph[node.child2()].mergeFlags(flags);
             break;
@@ -192,8 +238,8 @@ private:
             
         case ValueToInt32: {
             changed |= setPrediction(SpecInt32);
-            flags |= NodeUsedAsInt;
-            flags &= ~(NodeUsedAsNumber | NodeNeedsNegZero);
+            flags |= NodeUsedAsInt | NodeUsedAsIntLocally;
+            flags &= ~(NodeUsedAsNumber | NodeNeedsNegZero | NodeUsedAsOther);
             changed |= m_graph[node.child1()].mergeFlags(flags);
             break;
         }
@@ -221,7 +267,7 @@ private:
         case StringCharCodeAt: {
             changed |= mergePrediction(SpecInt32);
             changed |= m_graph[node.child1()].mergeFlags(NodeUsedAsValue);
-            changed |= m_graph[node.child2()].mergeFlags(NodeUsedAsNumber | NodeUsedAsInt);
+            changed |= m_graph[node.child2()].mergeFlags(NodeUsedAsNumber | NodeUsedAsOther | NodeUsedAsInt | NodeUsedAsIntLocally);
             break;
         }
 
@@ -254,6 +300,8 @@ private:
             
             if (isNotNegZero(node.child1().index()) || isNotNegZero(node.child2().index()))
                 flags &= ~NodeNeedsNegZero;
+            if (m_graph[node.child1()].hasNumberResult() || m_graph[node.child2()].hasNumberResult())
+                flags &= ~NodeUsedAsOther;
             
             changed |= m_graph[node.child1()].mergeFlags(flags);
             changed |= m_graph[node.child2()].mergeFlags(flags);
@@ -273,6 +321,7 @@ private:
             
             if (isNotNegZero(node.child1().index()) || isNotNegZero(node.child2().index()))
                 flags &= ~NodeNeedsNegZero;
+            flags &= ~NodeUsedAsOther;
             
             changed |= m_graph[node.child1()].mergeFlags(flags);
             changed |= m_graph[node.child2()].mergeFlags(flags);
@@ -292,6 +341,7 @@ private:
 
             if (isNotZero(node.child1().index()) || isNotZero(node.child2().index()))
                 flags &= ~NodeNeedsNegZero;
+            flags &= ~NodeUsedAsOther;
             
             changed |= m_graph[node.child1()].mergeFlags(flags);
             changed |= m_graph[node.child2()].mergeFlags(flags);
@@ -305,6 +355,8 @@ private:
                 else
                     changed |= mergePrediction(speculatedDoubleTypeForPrediction(m_graph[node.child1()].prediction()));
             }
+
+            flags &= ~NodeUsedAsOther;
 
             changed |= m_graph[node.child1()].mergeFlags(flags);
             break;
@@ -323,6 +375,8 @@ private:
             }
 
             flags |= NodeUsedAsNumber;
+            flags &= ~NodeUsedAsOther;
+
             changed |= m_graph[node.child1()].mergeFlags(flags);
             changed |= m_graph[node.child2()].mergeFlags(flags);
             break;
@@ -341,10 +395,20 @@ private:
 
             // As soon as a multiply happens, we can easily end up in the part
             // of the double domain where the point at which you do truncation
-            // can change the outcome. So, ArithMul always checks for overflow
-            // no matter what, and always forces its inputs to check as well.
+            // can change the outcome. So, ArithMul always forces its inputs to
+            // check for overflow. Additionally, it will have to check for overflow
+            // itself unless we can prove that there is no way for the values
+            // produced to cause double rounding.
+            
+            if (!isWithinPowerOfTwo(node.child1().index(), 22)
+                && !isWithinPowerOfTwo(node.child2().index(), 22))
+                flags |= NodeUsedAsNumber;
+            
+            changed |= node.mergeFlags(flags);
             
             flags |= NodeUsedAsNumber | NodeNeedsNegZero;
+            flags &= ~NodeUsedAsOther;
+
             changed |= m_graph[node.child1()].mergeFlags(flags);
             changed |= m_graph[node.child2()].mergeFlags(flags);
             break;
@@ -368,6 +432,8 @@ private:
             // no matter what, and always forces its inputs to check as well.
             
             flags |= NodeUsedAsNumber | NodeNeedsNegZero;
+            flags &= ~NodeUsedAsOther;
+
             changed |= m_graph[node.child1()].mergeFlags(flags);
             changed |= m_graph[node.child2()].mergeFlags(flags);
             break;
@@ -385,7 +451,9 @@ private:
                     changed |= mergePrediction(SpecDouble);
             }
             
-            flags |= NodeUsedAsValue;
+            flags |= NodeUsedAsNumber | NodeNeedsNegZero;
+            flags &= ~NodeUsedAsOther;
+
             changed |= m_graph[node.child1()].mergeFlags(flags);
             changed |= m_graph[node.child2()].mergeFlags(flags);
             break;
@@ -393,7 +461,9 @@ private:
             
         case ArithSqrt: {
             changed |= setPrediction(SpecDouble);
-            changed |= m_graph[node.child1()].mergeFlags(flags | NodeUsedAsValue);
+            flags |= NodeUsedAsNumber | NodeNeedsNegZero;
+            flags &= ~NodeUsedAsOther;
+            changed |= m_graph[node.child1()].mergeFlags(flags);
             break;
         }
             
@@ -405,7 +475,6 @@ private:
             else
                 changed |= mergePrediction(speculatedDoubleTypeForPrediction(child));
 
-            flags &= ~NodeNeedsNegZero;
             changed |= m_graph[node.child1()].mergeFlags(flags);
             break;
         }
@@ -448,13 +517,13 @@ private:
                 changed |= mergePrediction(node.getHeapPrediction());
 
             changed |= m_graph[node.child1()].mergeFlags(NodeUsedAsValue);
-            changed |= m_graph[node.child2()].mergeFlags(NodeUsedAsNumber | NodeUsedAsInt);
+            changed |= m_graph[node.child2()].mergeFlags(NodeUsedAsNumber | NodeUsedAsOther | NodeUsedAsInt | NodeUsedAsIntLocally);
             break;
         }
             
         case GetMyArgumentByValSafe: {
             changed |= mergePrediction(node.getHeapPrediction());
-            changed |= m_graph[node.child1()].mergeFlags(NodeUsedAsNumber | NodeUsedAsInt);
+            changed |= m_graph[node.child1()].mergeFlags(NodeUsedAsNumber | NodeUsedAsOther | NodeUsedAsInt | NodeUsedAsIntLocally);
             break;
         }
             
@@ -525,7 +594,9 @@ private:
             break;
         }
             
-        case GetScope: {
+        case GetMyScope:
+        case SkipTopScope:
+        case SkipScope: {
             changed |= setPrediction(SpecCellOther);
             break;
         }
@@ -555,7 +626,7 @@ private:
             
         case NewArrayWithSize: {
             changed |= setPrediction(SpecArray);
-            changed |= m_graph[node.child1()].mergeFlags(NodeUsedAsNumber | NodeUsedAsInt);
+            changed |= m_graph[node.child1()].mergeFlags(NodeUsedAsValue | NodeUsedAsInt | NodeUsedAsIntLocally);
             break;
         }
             
@@ -572,7 +643,7 @@ private:
         case StringCharAt: {
             changed |= setPrediction(SpecString);
             changed |= m_graph[node.child1()].mergeFlags(NodeUsedAsValue);
-            changed |= m_graph[node.child2()].mergeFlags(NodeUsedAsNumber | NodeUsedAsInt);
+            changed |= m_graph[node.child2()].mergeFlags(NodeUsedAsNumber | NodeUsedAsOther | NodeUsedAsInt | NodeUsedAsIntLocally);
             break;
         }
             
@@ -581,7 +652,7 @@ private:
             for (unsigned childIdx = node.firstChild();
                  childIdx < node.firstChild() + node.numChildren();
                  ++childIdx)
-                changed |= m_graph[m_graph.m_varArgChildren[childIdx]].mergeFlags(NodeUsedAsNumber);
+                changed |= m_graph[m_graph.m_varArgChildren[childIdx]].mergeFlags(NodeUsedAsNumber | NodeUsedAsOther);
             break;
         }
             
@@ -637,16 +708,17 @@ private:
         case PhantomArguments:
         case CheckArray:
         case Arrayify:
-        case ArrayifyToStructure: {
+        case ArrayifyToStructure:
+        case Identity: {
             // This node should never be visible at this stage of compilation. It is
             // inserted by fixup(), which follows this phase.
-            ASSERT_NOT_REACHED();
+            CRASH();
             break;
         }
         
         case PutByVal:
             changed |= m_graph[m_graph.varArgChild(node, 0)].mergeFlags(NodeUsedAsValue);
-            changed |= m_graph[m_graph.varArgChild(node, 1)].mergeFlags(NodeUsedAsNumber | NodeUsedAsInt);
+            changed |= m_graph[m_graph.varArgChild(node, 1)].mergeFlags(NodeUsedAsNumber | NodeUsedAsOther | NodeUsedAsInt | NodeUsedAsIntLocally);
             changed |= m_graph[m_graph.varArgChild(node, 2)].mergeFlags(NodeUsedAsValue);
             break;
 
@@ -691,6 +763,7 @@ private:
         case CheckArgumentsNotCreated:
         case GlobalVarWatchpoint:
         case GarbageValue:
+        case InheritorIDWatchpoint:
             changed |= mergeDefaultFlags(node);
             break;
             
@@ -701,7 +774,7 @@ private:
             break;
             
         case LastNodeType:
-            ASSERT_NOT_REACHED();
+            CRASH();
             break;
 #else
         default:
@@ -711,7 +784,7 @@ private:
         }
 
 #if DFG_ENABLE(DEBUG_PROPAGATION_VERBOSE)
-        dataLog("%s\n", speculationToString(m_graph[m_compileIndex].prediction()));
+        dataLog(SpeculationDump(m_graph[m_compileIndex].prediction()), "\n");
 #endif
         
         m_changed |= changed;
@@ -744,7 +817,7 @@ private:
     void propagateForward()
     {
 #if DFG_ENABLE(DEBUG_PROPAGATION_VERBOSE)
-        dataLog("Propagating predictions forward [%u]\n", ++m_count);
+        dataLogF("Propagating predictions forward [%u]\n", ++m_count);
 #endif
         for (m_compileIndex = 0; m_compileIndex < m_graph.size(); ++m_compileIndex)
             propagate(m_graph[m_compileIndex]);
@@ -753,7 +826,7 @@ private:
     void propagateBackward()
     {
 #if DFG_ENABLE(DEBUG_PROPAGATION_VERBOSE)
-        dataLog("Propagating predictions backward [%u]\n", ++m_count);
+        dataLogF("Propagating predictions backward [%u]\n", ++m_count);
 #endif
         for (m_compileIndex = m_graph.size(); m_compileIndex-- > 0;)
             propagate(m_graph[m_compileIndex]);
@@ -762,7 +835,7 @@ private:
     void doRoundOfDoubleVoting()
     {
 #if DFG_ENABLE(DEBUG_PROPAGATION_VERBOSE)
-        dataLog("Voting on double uses of locals [%u]\n", m_count);
+        dataLogF("Voting on double uses of locals [%u]\n", m_count);
 #endif
         for (unsigned i = 0; i < m_graph.m_variableAccessData.size(); ++i)
             m_graph.m_variableAccessData[i].find()->clearVotes();

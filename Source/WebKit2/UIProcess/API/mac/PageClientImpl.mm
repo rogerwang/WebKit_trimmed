@@ -29,6 +29,7 @@
 #if USE(DICTATION_ALTERNATIVES)
 #import <AppKit/NSTextAlternatives.h>
 #endif
+#import "AttributedString.h"
 #import "ColorSpaceData.h"
 #import "DataReference.h"
 #import "DictionaryPopupInfo.h"
@@ -384,22 +385,31 @@ void PageClientImpl::accessibilityWebProcessTokenReceived(const CoreIPC::DataRef
     [m_wkView _setAccessibilityWebProcessToken:remoteToken];
 }
     
-#if USE(ACCELERATED_COMPOSITING)
 void PageClientImpl::enterAcceleratedCompositingMode(const LayerTreeContext& layerTreeContext)
 {
-    [m_wkView _enterAcceleratedCompositingMode:layerTreeContext];
+    ASSERT(!layerTreeContext.isEmpty());
+
+    CALayer *renderLayer = WKMakeRenderLayer(layerTreeContext.contextID);
+    [m_wkView _setAcceleratedCompositingModeRootLayer:renderLayer];
 }
 
 void PageClientImpl::exitAcceleratedCompositingMode()
 {
-    [m_wkView _exitAcceleratedCompositingMode];
+    [m_wkView _setAcceleratedCompositingModeRootLayer:nil];
 }
 
 void PageClientImpl::updateAcceleratedCompositingMode(const LayerTreeContext& layerTreeContext)
 {
-    [m_wkView _updateAcceleratedCompositingMode:layerTreeContext];
+    ASSERT(!layerTreeContext.isEmpty());
+
+    CALayer *renderLayer = WKMakeRenderLayer(layerTreeContext.contextID);
+    [m_wkView _setAcceleratedCompositingModeRootLayer:renderLayer];
 }
-#endif // USE(ACCELERATED_COMPOSITING)
+
+void PageClientImpl::setAcceleratedCompositingRootLayer(CALayer *rootLayer)
+{
+    [m_wkView _setAcceleratedCompositingModeRootLayer:rootLayer];
+}
 
 void PageClientImpl::pluginFocusOrWindowFocusChanged(uint64_t pluginComplexTextInputIdentifier, bool pluginHasFocusAndWindowHasFocus)
 {
@@ -462,14 +472,9 @@ void PageClientImpl::flashBackingStoreUpdates(const Vector<IntRect>&)
     notImplemented();
 }
 
-void PageClientImpl::didPerformDictionaryLookup(const String& text, double scaleFactor, const DictionaryPopupInfo& dictionaryPopupInfo)
+void PageClientImpl::didPerformDictionaryLookup(const AttributedString& text, const DictionaryPopupInfo& dictionaryPopupInfo)
 {
-    NSFontDescriptor *fontDescriptor = [NSFontDescriptor fontDescriptorWithFontAttributes:(NSDictionary *)dictionaryPopupInfo.fontInfo.fontAttributeDictionary.get()];
-    NSFont *font = [NSFont fontWithDescriptor:fontDescriptor size:((scaleFactor != 1) ? [fontDescriptor pointSize] * scaleFactor : 0)];
-
-    RetainPtr<NSMutableAttributedString> attributedString(AdoptNS, [[NSMutableAttributedString alloc] initWithString:nsStringFromWebCoreString(text)]);
-    [attributedString.get() addAttribute:NSFontAttributeName value:font range:NSMakeRange(0, [attributedString.get() length])];
-
+    RetainPtr<NSAttributedString> attributedString = text.string;
     NSPoint textBaselineOrigin = dictionaryPopupInfo.origin;
 
 #if __MAC_OS_X_VERSION_MIN_REQUIRED >= 1070
@@ -551,6 +556,11 @@ void PageClientImpl::recommendedScrollbarStyleDidChange(int32_t newStyle)
 #else
     UNUSED_PARAM(newStyle);
 #endif
+}
+
+void PageClientImpl::intrinsicContentSizeDidChange(const IntSize& intrinsicContentSize)
+{
+    [m_wkView _setIntrinsicContentSize:intrinsicContentSize];
 }
 
 bool PageClientImpl::executeSavedCommandBySelector(const String& selectorString)

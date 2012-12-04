@@ -40,20 +40,9 @@
 #include "config.h"
 #include "JPEGImageDecoder.h"
 #include "PlatformInstrumentation.h"
-#include <stdio.h>  // Needed by jpeglib.h for FILE.
 #include <wtf/PassOwnPtr.h>
 
-#if OS(WINCE)
-// Remove warning: 'FAR' macro redefinition
-#undef FAR
-
-// jmorecfg.h in libjpeg checks for XMD_H with the comment: "X11/xmd.h correctly defines INT32"
-// fix INT32 redefinition error by pretending we are X11/xmd.h
-#define XMD_H
-#endif
-
 extern "C" {
-#include "jpeglib.h"
 #if USE(ICCJPEG)
 #include "iccjpeg.h"
 #endif
@@ -646,6 +635,78 @@ bool JPEGImageDecoder::setFailed()
     return ImageDecoder::setFailed();
 }
 
+template <J_COLOR_SPACE colorSpace>
+void setPixel(ImageFrame& buffer, ImageFrame::PixelData* currentAddress, JSAMPARRAY samples, int column)
+{
+    JSAMPLE* jsample = *samples + column * (colorSpace == JCS_RGB ? 3 : 4);
+
+    switch (colorSpace) {
+#if defined(TURBO_JPEG_RGB_SWIZZLE)
+    case JCS_EXT_BGRA:
+        buffer.setRGBA(currentAddress, jsample[2], jsample[1], jsample[0], 0xFF);
+        break;
+    case JCS_EXT_RGBA: // Fallback to JSC_RGB case here.
+#endif
+    case JCS_RGB:
+        buffer.setRGBA(currentAddress, jsample[0], jsample[1], jsample[2], 0xFF);
+        break;
+    case JCS_CMYK:
+        // Source is 'Inverted CMYK', output is RGB.
+        // See: http://www.easyrgb.com/math.php?MATH=M12#text12
+        // Or: http://www.ilkeratalay.com/colorspacesfaq.php#rgb
+        // From CMYK to CMY:
+        // X =   X    * (1 -   K   ) +   K  [for X = C, M, or Y]
+        // Thus, from Inverted CMYK to CMY is:
+        // X = (1-iX) * (1 - (1-iK)) + (1-iK) => 1 - iX*iK
+        // From CMY (0..1) to RGB (0..1):
+        // R = 1 - C => 1 - (1 - iC*iK) => iC*iK  [G and B similar]
+        unsigned k = jsample[3];
+        buffer.setRGBA(currentAddress, jsample[0] * k / 255, jsample[1] * k / 255, jsample[2] * k / 255, 0xFF);
+        break;
+    }
+}
+
+template <J_COLOR_SPACE colorSpace, bool isScaled>
+bool JPEGImageDecoder::outputScanlines(ImageFrame& buffer)
+{
+    JSAMPARRAY samples = m_reader->samples();
+    jpeg_decompress_struct* info = m_reader->info();
+
+    int width = isScaled ? m_scaledColumns.size() : info->output_width;
+
+    while (info->output_scanline < info->output_height) {
+        // jpeg_read_scanlines will increase the scanline counter, so we
+        // save the scanline before calling it.
+        int sourceY = info->output_scanline;
+        /* Request one scanline.  Returns 0 or 1 scanlines. */
+        if (jpeg_read_scanlines(info, samples, 1) != 1)
+            return false;
+
+        int destY = scaledY(sourceY);
+        if (destY < 0)
+            continue;
+
+#if USE(QCMSLIB)
+        if (m_reader->colorTransform() && colorSpace == JCS_RGB)
+            qcms_transform_data(m_reader->colorTransform(), *samples, *samples, info->output_width);
+#endif
+
+        ImageFrame::PixelData* currentAddress = buffer.getAddr(0, destY);
+
+        for (int x = 0; x < width; ++x) {
+            setPixel<colorSpace>(buffer, currentAddress, samples, isScaled ? m_scaledColumns[x] : x);
+            ++currentAddress;
+        }
+    }
+    return true;
+}
+
+template <J_COLOR_SPACE colorSpace>
+bool JPEGImageDecoder::outputScanlines(ImageFrame& buffer)
+{
+    return m_scaled ? outputScanlines<colorSpace, true>(buffer) : outputScanlines<colorSpace, false>(buffer);
+}
+
 bool JPEGImageDecoder::outputScanlines()
 {
     if (m_frameBufferCache.isEmpty())
@@ -668,9 +729,8 @@ bool JPEGImageDecoder::outputScanlines()
 
     jpeg_decompress_struct* info = m_reader->info();
 
-#if !ENABLE(IMAGE_DECODER_DOWN_SAMPLING) && defined(TURBO_JPEG_RGB_SWIZZLE)
-    if (turboSwizzled(info->out_color_space)) {
-        ASSERT(!m_scaled);
+#if defined(TURBO_JPEG_RGB_SWIZZLE)
+    if (!m_scaled && turboSwizzled(info->out_color_space)) {
         while (info->output_scanline < info->output_height) {
             unsigned char* row = reinterpret_cast<unsigned char*>(buffer.getAddr(0, info->output_scanline));
             if (jpeg_read_scanlines(info, &row, 1) != 1)
@@ -684,54 +744,26 @@ bool JPEGImageDecoder::outputScanlines()
      }
 #endif
 
-    JSAMPARRAY samples = m_reader->samples();
-
-    while (info->output_scanline < info->output_height) {
-        // jpeg_read_scanlines will increase the scanline counter, so we
-        // save the scanline before calling it.
-        int sourceY = info->output_scanline;
-        /* Request one scanline.  Returns 0 or 1 scanlines. */
-        if (jpeg_read_scanlines(info, samples, 1) != 1)
-            return false;
-
-        int destY = scaledY(sourceY);
-        if (destY < 0)
-            continue;
-#if USE(QCMSLIB)
-        if (m_reader->colorTransform() && info->out_color_space == JCS_RGB)
-            qcms_transform_data(m_reader->colorTransform(), *samples, *samples, info->output_width);
-#endif
-        int width = m_scaled ? m_scaledColumns.size() : info->output_width;
-        for (int x = 0; x < width; ++x) {
-            JSAMPLE* jsample = *samples + (m_scaled ? m_scaledColumns[x] : x) * ((info->out_color_space == JCS_RGB) ? 3 : 4);
-            if (info->out_color_space == JCS_RGB)
-                buffer.setRGBA(x, destY, jsample[0], jsample[1], jsample[2], 0xFF);
+    switch (info->out_color_space) {
+    // The code inside outputScanlines<int, bool> will be executed
+    // for each pixel, so we want to avoid any extra comparisons there.
+    // That is why we use template and template specializations here so
+    // the proper code will be generated at compile time.
+    case JCS_RGB:
+        return outputScanlines<JCS_RGB>(buffer);
 #if defined(TURBO_JPEG_RGB_SWIZZLE)
-            else if (info->out_color_space == JCS_EXT_RGBA)
-                buffer.setRGBA(x, destY, jsample[0], jsample[1], jsample[2], 0xFF);
-            else if (info->out_color_space == JCS_EXT_BGRA)
-                buffer.setRGBA(x, destY, jsample[2], jsample[1], jsample[0], 0xFF);
+    case JCS_EXT_RGBA:
+        return outputScanlines<JCS_EXT_RGBA>(buffer);
+    case JCS_EXT_BGRA:
+        return outputScanlines<JCS_EXT_BGRA>(buffer);
 #endif
-            else if (info->out_color_space == JCS_CMYK) {
-                // Source is 'Inverted CMYK', output is RGB.
-                // See: http://www.easyrgb.com/math.php?MATH=M12#text12
-                // Or:  http://www.ilkeratalay.com/colorspacesfaq.php#rgb
-                // From CMYK to CMY:
-                // X =   X    * (1 -   K   ) +   K  [for X = C, M, or Y]
-                // Thus, from Inverted CMYK to CMY is:
-                // X = (1-iX) * (1 - (1-iK)) + (1-iK) => 1 - iX*iK
-                // From CMY (0..1) to RGB (0..1):
-                // R = 1 - C => 1 - (1 - iC*iK) => iC*iK  [G and B similar]
-                unsigned k = jsample[3];
-                buffer.setRGBA(x, destY, jsample[0] * k / 255, jsample[1] * k / 255, jsample[2] * k / 255, 0xFF);
-            } else {
-                ASSERT_NOT_REACHED();
-                return setFailed();
-            }
-        }
+    case JCS_CMYK:
+        return outputScanlines<JCS_CMYK>(buffer);
+    default:
+        ASSERT_NOT_REACHED();
     }
 
-    return true;
+    return setFailed();
 }
 
 void JPEGImageDecoder::jpegComplete()

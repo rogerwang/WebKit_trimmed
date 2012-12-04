@@ -38,7 +38,7 @@ from webkitpy.tool.mocktool import MockTool
 class FeedersTest(unittest.TestCase):
     def test_commit_queue_feeder(self):
         feeder = CommitQueueFeeder(MockTool())
-        expected_stderr = u"""Warning, attachment 10001 on bug 50000 has invalid committer (non-committer@example.com)
+        expected_logs = """Warning, attachment 10001 on bug 50000 has invalid committer (non-committer@example.com)
 Warning, attachment 10001 on bug 50000 has invalid committer (non-committer@example.com)
 MOCK setting flag 'commit-queue' to '-' on attachment '10001' with comment 'Rejecting attachment 10001 from commit-queue.' and additional comment 'non-committer@example.com does not have committer permissions according to http://trac.webkit.org/browser/trunk/Tools/Scripts/webkitpy/common/config/committers.py.
 
@@ -48,7 +48,7 @@ MOCK setting flag 'commit-queue' to '-' on attachment '10001' with comment 'Reje
 MOCK: update_work_items: commit-queue [10005, 10000]
 Feeding commit-queue items [10005, 10000]
 """
-        OutputCapture().assert_outputs(self, feeder.feed, expected_stderr=expected_stderr)
+        OutputCapture().assert_outputs(self, feeder.feed, expected_logs=expected_logs)
 
     def _mock_attachment(self, is_rollout, attach_date):
         attachment = Mock()
@@ -77,4 +77,4 @@ Feeding commit-queue items [10005, 10000]
 
         feeder = CommitQueueFeeder(MockTool())
         patches = [MockPatch(1, None), MockPatch(2, '-'), MockPatch(3, "+")]
-        self.assertEquals([patch.id for patch in feeder._patches_with_acceptable_review_flag(patches)], [1, 3])
+        self.assertEqual([patch.id for patch in feeder._patches_with_acceptable_review_flag(patches)], [1, 3])

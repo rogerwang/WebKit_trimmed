@@ -449,7 +449,7 @@ void RSSFilterStream::notifyStatusReceived(int status, const char* message)
     FilterStream::notifyStatusReceived(status, message);
 }
 
-void RSSFilterStream::notifyHeadersReceived(NetworkRequest::HeaderList& headers)
+void RSSFilterStream::notifyHeadersReceived(const NetworkRequest::HeaderList& headers)
 {
     if (!isRSSContent(m_resourceType)) {
         NetworkRequest::HeaderList::const_iterator end = headers.end();
@@ -527,7 +527,7 @@ bool RSSFilterStream::convertContentToHtml(std::string& result)
 
     OwnPtr<RSSGenerator> generator = adoptPtr(new RSSGenerator());
     String html = generator->generateHtml(parser->m_root);
-    result = html.utf8(true).data();
+    result = html.utf8(String::StrictConversion).data();
 
     return true;
 }

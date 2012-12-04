@@ -119,6 +119,7 @@ public:
     virtual void dispatchDecidePolicyForNavigationAction(WebCore::FramePolicyFunction function, const WebCore::NavigationAction& action, const WebCore::ResourceRequest& request, PassRefPtr<WebCore::FormState> form_state);
     virtual void cancelPolicyCheck();
     virtual void dispatchUnableToImplementPolicy(const WebCore::ResourceError&);
+    virtual void dispatchWillRequestResource(WebCore::CachedResourceRequest*);
     virtual void dispatchWillSendSubmitEvent(PassRefPtr<WebCore::FormState>);
     virtual void dispatchWillSubmitForm(WebCore::FramePolicyFunction, PassRefPtr<WebCore::FormState>);
     virtual void revertToProvisionalState(WebCore::DocumentLoader*) { }
@@ -228,6 +229,11 @@ public:
 
 #if ENABLE(REQUEST_AUTOCOMPLETE)
     virtual void didRequestAutocomplete(PassRefPtr<WebCore::FormState>) OVERRIDE;
+#endif
+
+#if ENABLE(WEBGL)
+    virtual bool allowWebGL(bool enabledPerSettings) OVERRIDE;
+    virtual void didLoseWebGLContext(int arbRobustnessContextLostReason) OVERRIDE;
 #endif
 
 private:

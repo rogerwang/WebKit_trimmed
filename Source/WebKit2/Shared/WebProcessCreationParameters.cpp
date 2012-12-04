@@ -73,6 +73,12 @@ void WebProcessCreationParameters::encode(CoreIPC::ArgumentEncoder& encoder) con
     encoder << urlSchemesRegisteredAsNoAccess;
     encoder << urlSchemesRegisteredAsDisplayIsolated;
     encoder << urlSchemesRegisteredAsCORSEnabled;
+#if ENABLE(CUSTOM_PROTOCOLS)
+    encoder << urlSchemesRegisteredForCustomProtocols;
+#endif
+#if USE(SOUP)
+    encoder << urlSchemesRegistered;
+#endif
     encoder.encodeEnum(cacheModel);
     encoder << shouldTrackVisitedLinks;
     encoder << shouldAlwaysUseComplexTextCodePath;
@@ -158,6 +164,14 @@ bool WebProcessCreationParameters::decode(CoreIPC::ArgumentDecoder* decoder, Web
         return false;
     if (!decoder->decode(parameters.urlSchemesRegisteredAsCORSEnabled))
         return false;
+#if ENABLE(CUSTOM_PROTOCOLS)
+    if (!decoder->decode(parameters.urlSchemesRegisteredForCustomProtocols))
+        return false;
+#endif
+#if USE(SOUP)
+    if (!decoder->decode(parameters.urlSchemesRegistered))
+        return false;
+#endif
     if (!decoder->decodeEnum(parameters.cacheModel))
         return false;
     if (!decoder->decode(parameters.shouldTrackVisitedLinks))

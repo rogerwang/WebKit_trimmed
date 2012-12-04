@@ -35,6 +35,7 @@
 #include "BytecodeConventions.h"
 #include "CallLinkInfo.h"
 #include "CallReturnOffsetToBytecodeOffset.h"
+#include "CodeBlockHash.h"
 #include "CodeOrigin.h"
 #include "CodeType.h"
 #include "Comment.h"
@@ -78,7 +79,7 @@
 
 // Set ENABLE_BYTECODE_COMMENTS to 1 to enable recording bytecode generator
 // comments for the bytecodes that it generates. This will allow
-// CodeBlock::dump() to provide some contextual info about the bytecodes.
+// CodeBlock::dumpBytecode() to provide some contextual info about the bytecodes.
 //
 // The way this comment system works is as follows:
 // 1. The BytecodeGenerator calls prependComment() with a constant comment
@@ -88,7 +89,7 @@
 //    prepended comment will be recorded with the PC of the opcode being
 //    emitted. This comment is being recorded in the CodeBlock's
 //    m_bytecodeComments.
-// 3. When CodeBlock::dump() is called, it will pair up the comments with
+// 3. When CodeBlock::dumpBytecode() is called, it will pair up the comments with
 //    their corresponding bytecodes based on the bytecode and comment's
 //    PC. If a matching pair is found, the comment will be printed after
 //    the bytecode. If not, no comment is printed.
@@ -128,6 +129,10 @@ namespace JSC {
     public:
         JS_EXPORT_PRIVATE virtual ~CodeBlock();
         
+        CodeBlockHash hash() const;
+        void dumpAssumingJITType(PrintStream&, JITCode::JITType) const;
+        void dump(PrintStream&) const;
+        
         int numParameters() const { return m_numParameters; }
         void setNumParameters(int newValue);
         
@@ -138,11 +143,9 @@ namespace JSC {
         PassOwnPtr<CodeBlock> releaseAlternative() { return m_alternative.release(); }
         void setAlternative(PassOwnPtr<CodeBlock> alternative) { m_alternative = alternative; }
         
-        CodeSpecializationKind specializationKind()
+        CodeSpecializationKind specializationKind() const
         {
-            if (m_isConstructor)
-                return CodeForConstruct;
-            return CodeForCall;
+            return specializationFromIsConstruct(m_isConstructor);
         }
         
 #if ENABLE(JIT)
@@ -163,9 +166,10 @@ namespace JSC {
 
         static void dumpStatistics();
 
-        void dump(ExecState*);
-        void printStructures(const Instruction*);
-        void printStructure(const char* name, const Instruction*, int operand);
+        void dumpBytecode(PrintStream& = WTF::dataFile());
+        void dumpBytecode(PrintStream&, unsigned bytecodeOffset);
+        void printStructures(PrintStream&, const Instruction*);
+        void printStructure(PrintStream&, const char* name, const Instruction*, int operand);
 
         bool isStrictMode() const { return m_isStrictMode; }
 
@@ -185,10 +189,10 @@ namespace JSC {
             return index >= m_numVars;
         }
 
-        void dumpBytecodeCommentAndNewLine(int location);
+        void dumpBytecodeCommentAndNewLine(PrintStream&, int location);
 #if ENABLE(BYTECODE_COMMENTS)
-        const char* commentForBytecodeOffset(unsigned bytecodeOffset);
-        void dumpBytecodeComments();
+        const char* commentForBytecodeOffset(PrintStream&, unsigned bytecodeOffset);
+        void dumpBytecodeComments(PrintStream&);
 #endif
 
         HandlerInfo* handlerForBytecodeOffset(unsigned bytecodeOffset);
@@ -245,6 +249,7 @@ namespace JSC {
         
         CallLinkInfo& getCallLinkInfo(unsigned bytecodeIndex)
         {
+            ASSERT(JITCode::isBaselineCode(getJITType()));
             return *(binarySearch<CallLinkInfo, unsigned, getCallLinkInfoBytecodeIndex>(m_callLinkInfos.begin(), m_callLinkInfos.size(), bytecodeIndex));
         }
 #endif // ENABLE(JIT)
@@ -273,6 +278,11 @@ namespace JSC {
         void linkIncomingCall(CallLinkInfo* incoming)
         {
             m_incomingCalls.push(incoming);
+        }
+        
+        bool isIncomingCallAlreadyLinked(CallLinkInfo* incoming)
+        {
+            return m_incomingCalls.isOnList(incoming);
         }
 #endif // ENABLE(JIT)
 
@@ -465,7 +475,7 @@ namespace JSC {
         }
         JITCode& getJITCode() { return m_jitCode; }
         MacroAssemblerCodePtr getJITCodeWithArityCheck() { return m_jitCodeWithArityCheck; }
-        JITCode::JITType getJITType() { return m_jitCode.jitType(); }
+        JITCode::JITType getJITType() const { return m_jitCode.jitType(); }
         ExecutableMemoryHandle* executableMemory() { return getJITCode().getExecutableMemory(); }
         virtual JSObject* compileOptimized(ExecState*, JSScope*, unsigned bytecodeIndex) = 0;
         virtual void jettison() = 0;
@@ -813,17 +823,7 @@ namespace JSC {
             return m_rareData && !!m_rareData->m_codeOrigins.size();
         }
         
-        bool codeOriginForReturn(ReturnAddressPtr returnAddress, CodeOrigin& codeOrigin)
-        {
-            if (!hasCodeOrigins())
-                return false;
-            unsigned offset = getJITCode().offsetOf(returnAddress.value());
-            CodeOriginAtCallReturnOffset* entry = binarySearch<CodeOriginAtCallReturnOffset, unsigned, getCallReturnOffsetForCodeOrigin>(codeOrigins().begin(), codeOrigins().size(), offset, WTF::KeyMustNotBePresentInArray);
-            if (entry->callReturnOffset != offset)
-                return false;
-            codeOrigin = entry->codeOrigin;
-            return true;
-        }
+        bool codeOriginForReturn(ReturnAddressPtr, CodeOrigin&);
         
         CodeOrigin codeOrigin(unsigned index)
         {
@@ -1187,6 +1187,10 @@ namespace JSC {
 
     private:
         friend class DFGCodeBlocks;
+
+#if ENABLE(JIT)
+        ClosureCallStubRoutine* findClosureCallForReturnPC(ReturnAddressPtr);
+#endif
         
 #if ENABLE(DFG_JIT)
         void tallyFrequentExitSites();
@@ -1211,17 +1215,17 @@ namespace JSC {
                 m_constantRegisters[i].set(*m_globalData, ownerExecutable(), constants[i].get());
         }
 
-        void dump(ExecState*, const Vector<Instruction>::const_iterator& begin, Vector<Instruction>::const_iterator&);
+        void dumpBytecode(PrintStream&, ExecState*, const Instruction* begin, const Instruction*&);
 
         CString registerName(ExecState*, int r) const;
-        void printUnaryOp(ExecState*, int location, Vector<Instruction>::const_iterator&, const char* op);
-        void printBinaryOp(ExecState*, int location, Vector<Instruction>::const_iterator&, const char* op);
-        void printConditionalJump(ExecState*, const Vector<Instruction>::const_iterator&, Vector<Instruction>::const_iterator&, int location, const char* op);
-        void printGetByIdOp(ExecState*, int location, Vector<Instruction>::const_iterator&);
-        void printGetByIdCacheStatus(ExecState*, int location);
+        void printUnaryOp(PrintStream&, ExecState*, int location, const Instruction*&, const char* op);
+        void printBinaryOp(PrintStream&, ExecState*, int location, const Instruction*&, const char* op);
+        void printConditionalJump(PrintStream&, ExecState*, const Instruction*, const Instruction*&, int location, const char* op);
+        void printGetByIdOp(PrintStream&, ExecState*, int location, const Instruction*&);
+        void printGetByIdCacheStatus(PrintStream&, ExecState*, int location);
         enum CacheDumpMode { DumpCaches, DontDumpCaches };
-        void printCallOp(ExecState*, int location, Vector<Instruction>::const_iterator&, const char* op, CacheDumpMode);
-        void printPutByIdOp(ExecState*, int location, Vector<Instruction>::const_iterator&, const char* op);
+        void printCallOp(PrintStream&, ExecState*, int location, const Instruction*&, const char* op, CacheDumpMode);
+        void printPutByIdOp(PrintStream&, ExecState*, int location, const Instruction*&, const char* op);
         void visitStructures(SlotVisitor&, Instruction* vPC);
         
 #if ENABLE(DFG_JIT)
@@ -1238,6 +1242,9 @@ namespace JSC {
             // they are executing. Instead we strongly mark their weak references to
             // allow them to continue to execute soundly.
             if (m_dfgData->mayBeExecuting)
+                return true;
+            
+            if (Options::forceDFGCodeBlockLiveness())
                 return true;
 
             return false;

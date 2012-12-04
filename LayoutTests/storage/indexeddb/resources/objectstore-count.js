@@ -5,27 +5,11 @@ if (this.importScripts) {
 
 description("Test IndexedDB's IDBObjectStore.count().");
 
-function test()
-{
-    removeVendorPrefixes();
-    request = evalAndLog("indexedDB.open('objectstore-count')");
-    request.onerror = unexpectedErrorCallback;
-    request.onsuccess = function() {
-        db = evalAndLog("db = event.target.result");
-        request = evalAndLog("db.setVersion('new version')");
-        request.onerror = unexpectedErrorCallback;
-        request.onsuccess = prepareDatabase;
-    };
-}
-
+indexedDBTest(prepareDatabase, verifyCount);
 function prepareDatabase()
 {
-    debug("");
-    debug("preparing database");
-    self.trans = evalAndLog("trans = event.target.result");
-    shouldBeNonNull("trans");
-
-    deleteAllObjectStores(db);
+    db = event.target.result;
+    event.target.transaction.onabort = unexpectedAbortCallback;
 
     store = evalAndLog("store = db.createObjectStore('storeName', null)");
 
@@ -34,7 +18,6 @@ function prepareDatabase()
         request = store.add(i, i);
         request.onerror = unexpectedErrorCallback;
     }
-    trans.oncomplete = verifyCount;
 }
 
 function verifyCount()
@@ -113,9 +96,9 @@ function verifyCountWithKey()
     store = evalAndLog("store = trans.objectStore('storeName')");
     shouldBeNonNull("store");
 
-    evalAndExpectException("store.count(NaN)", "IDBDatabaseException.DATA_ERR", "'DataError'");
-    evalAndExpectException("store.count({})", "IDBDatabaseException.DATA_ERR", "'DataError'");
-    evalAndExpectException("store.count(/regex/)", "IDBDatabaseException.DATA_ERR", "'DataError'");
+    evalAndExpectException("store.count(NaN)", "0", "'DataError'");
+    evalAndExpectException("store.count({})", "0", "'DataError'");
+    evalAndExpectException("store.count(/regex/)", "0", "'DataError'");
 
     var tests = [
         { key: 0, expected: 1 },
@@ -140,5 +123,3 @@ function verifyCountWithKey()
 
     nextTest();
 }
-
-test();

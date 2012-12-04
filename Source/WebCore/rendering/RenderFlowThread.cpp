@@ -737,7 +737,7 @@ void RenderFlowThread::resetRegionsOverrideLogicalContentHeight()
 
     // We need to reset the override logical content height for regions with auto logical height
     // only if the flow thread content needs layout.
-    if (!selfNeedsLayout())
+    if (!needsLayout())
         return;
 
     // FIXME: optimize this to iterate the region chain only if the flow thread has auto logical height
@@ -753,6 +753,9 @@ void RenderFlowThread::resetRegionsOverrideLogicalContentHeight()
         // as we are already inside layout.
         region->setNeedsLayout(true);
     }
+    // Make sure we don't skip any region breaks when we do the layout again.
+    // Using m_regionsInvalidated to force all the RenderFlowThread children do the layout again.
+    m_regionsInvalidated = true;
 }
 
 void RenderFlowThread::markAutoLogicalHeightRegionsForLayout()
@@ -856,7 +859,7 @@ bool RenderFlowThread::addForcedRegionBreak(LayoutUnit offsetBreakInFlowThread, 
 
     RenderRegionList::iterator regionIter = m_regionList.find(region);
     ASSERT(regionIter != m_regionList.end());
-    for (; (regionIter != m_regionList.end()) && (currentRegionOffsetInFlowThread < offsetBreakInFlowThread); ++regionIter) {
+    for (; regionIter != m_regionList.end(); ++regionIter) {
         RenderRegion* region = *regionIter;
         if (region->needsOverrideLogicalContentHeightComputation()) {
             mapToUse.set(breakChild, region);
@@ -871,6 +874,12 @@ bool RenderFlowThread::addForcedRegionBreak(LayoutUnit offsetBreakInFlowThread, 
             currentRegionOffsetInFlowThread += regionOverrideLogicalContentHeight;
         } else
             currentRegionOffsetInFlowThread += isHorizontalWritingMode() ? region->flowThreadPortionRect().height() : region->flowThreadPortionRect().width();
+
+        // If the current offset if greater than the break offset, bail out and skip the current region.
+        if (currentRegionOffsetInFlowThread >= offsetBreakInFlowThread) {
+            ++regionIter;
+            break;
+        }
     }
 
     // The remaining auto logical height regions in the chain that were unable to receive content

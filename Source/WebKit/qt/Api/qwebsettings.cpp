@@ -20,41 +20,40 @@
 #include "config.h"
 #include "qwebsettings.h"
 
-#include "qwebpage.h"
-#include "qwebpage_p.h"
 #include "qwebplugindatabase_p.h"
 
 #include "AbstractDatabase.h"
-#include "MemoryCache.h"
+#include "ApplicationCacheStorage.h"
 #include "CrossOriginPreflightResultCache.h"
+#include "DatabaseTracker.h"
+#include "FileSystem.h"
 #include "FontCache.h"
+#include "IconDatabase.h"
+#include "Image.h"
 #if ENABLE(ICONDATABASE)
 #include "IconDatabaseClientQt.h"
 #endif
 #include "InitWebCoreQt.h"
+#include "IntSize.h"
+#include "KURL.h"
+#include "MemoryCache.h"
+#include "NetworkStateNotifier.h"
 #include "Page.h"
 #include "PageCache.h"
-#include "Settings.h"
-#include "KURL.h"
-#include "IconDatabase.h"
 #include "PluginDatabase.h"
-#include "Image.h"
-#include "IntSize.h"
-#include "ApplicationCacheStorage.h"
-#include "DatabaseTracker.h"
-#include "FileSystem.h"
-#include <wtf/text/WTFString.h>
-
-#include <QApplication>
-#include <QStandardPaths>
+#include "RuntimeEnabledFeatures.h"
+#include "Settings.h"
 #include <QDir>
+#include <QFileInfo>
+#include <QFont>
+#include <QGuiApplication>
 #include <QHash>
 #include <QSharedData>
+#include <QStandardPaths>
 #include <QUrl>
-#include <QFileInfo>
-#include <QStyle>
+#include <wtf/text/WTFString.h>
 
-#include "NetworkStateNotifier.h"
+
 
 void QWEBKIT_EXPORT qt_networkAccessAllowed(bool isAllowed)
 {
@@ -169,7 +168,7 @@ void QWebSettingsPrivate::apply()
 
         value = attributes.value(QWebSettings::CSSRegionsEnabled,
                                  global->attributes.value(QWebSettings::CSSRegionsEnabled));
-        settings->setCSSRegionsEnabled(value);
+        WebCore::RuntimeEnabledFeatures::setCSSRegionsEnabled(value);
         value = attributes.value(QWebSettings::CSSGridLayoutEnabled,
                                  global->attributes.value(QWebSettings::CSSGridLayoutEnabled));
         settings->setCSSGridLayoutEnabled(value);
@@ -535,7 +534,7 @@ QWebSettings::QWebSettings()
     d->attributes.insert(QWebSettings::LocalContentCanAccessRemoteUrls, false);
     d->attributes.insert(QWebSettings::LocalContentCanAccessFileUrls, true);
     d->attributes.insert(QWebSettings::AcceleratedCompositingEnabled, true);
-    d->attributes.insert(QWebSettings::WebGLEnabled, false);
+    d->attributes.insert(QWebSettings::WebGLEnabled, true);
     d->attributes.insert(QWebSettings::CSSRegionsEnabled, true);
     d->attributes.insert(QWebSettings::CSSGridLayoutEnabled, false);
     d->attributes.insert(QWebSettings::HyperlinkAuditingEnabled, false);

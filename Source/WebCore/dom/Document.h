@@ -77,13 +77,11 @@ class DocumentFragment;
 class DocumentLoader;
 class DocumentMarkerController;
 class DocumentParser;
+class DocumentSharedObjectPool;
 class DocumentStyleSheetCollection;
 class DocumentType;
 class DocumentWeakReference;
-class DynamicNodeListCacheBase;
-class EditingText;
 class Element;
-class ElementAttributeData;
 class EntityReference;
 class Event;
 class EventListener;
@@ -107,6 +105,7 @@ class HitTestResult;
 class IntPoint;
 class LayoutPoint;
 class LayoutRect;
+class LiveNodeListBase;
 class DOMWrapperWorld;
 class JSNode;
 class Locale;
@@ -206,9 +205,6 @@ enum NodeListInvalidationType {
     InvalidateOnAnyAttrChange,
 };
 const int numNodeListInvalidationTypes = InvalidateOnAnyAttrChange + 1;
-
-struct ImmutableAttributeDataCacheEntry;
-typedef HashMap<unsigned, OwnPtr<ImmutableAttributeDataCacheEntry>, AlreadyHashed> ImmutableAttributeDataCache;
 
 class Document : public ContainerNode, public TreeScope, public ScriptExecutionContext {
 public:
@@ -323,6 +319,7 @@ public:
     DEFINE_ATTRIBUTE_EVENT_LISTENER(webkitvisibilitychange);
 #endif
 
+    void setViewportArguments(const ViewportArguments& viewportArguments) { m_viewportArguments = viewportArguments; }
     ViewportArguments viewportArguments() const { return m_viewportArguments; }
 #ifndef NDEBUG
     bool didDispatchViewportPropertiesChanged() const { return m_didDispatchViewportPropertiesChanged; }
@@ -439,15 +436,11 @@ public:
     PassRefPtr<HTMLCollection> links();
     PassRefPtr<HTMLCollection> forms();
     PassRefPtr<HTMLCollection> anchors();
-    PassRefPtr<HTMLCollection> objects();
     PassRefPtr<HTMLCollection> scripts();
     PassRefPtr<HTMLCollection> all();
-    void removeCachedHTMLCollection(HTMLCollection*, CollectionType);
 
     PassRefPtr<HTMLCollection> windowNamedItems(const AtomicString& name);
     PassRefPtr<HTMLCollection> documentNamedItems(const AtomicString& name);
-    void removeWindowNamedItemCache(HTMLCollection*, const AtomicString&);
-    void removeDocumentNamedItemCache(HTMLCollection*, const AtomicString&);
 
     // Other methods (not part of DOM)
     bool isHTMLDocument() const { return m_isHTML; }
@@ -525,7 +518,7 @@ public:
 
     // Special support for editing
     PassRefPtr<CSSStyleDeclaration> createCSSStyleDeclaration();
-    PassRefPtr<EditingText> createEditingTextNode(const String&);
+    PassRefPtr<Text> createEditingTextNode(const String&);
 
     void recalcStyle(StyleChange = NoChange);
     bool childNeedsAndNotInStyleRecalc();
@@ -719,8 +712,8 @@ public:
     bool hasPendingForcedStyleRecalc() const;
     void styleRecalcTimerFired(Timer<Document>*);
 
-    void registerNodeListCache(DynamicNodeListCacheBase*);
-    void unregisterNodeListCache(DynamicNodeListCacheBase*);
+    void registerNodeList(LiveNodeListBase*);
+    void unregisterNodeList(LiveNodeListBase*);
     bool shouldInvalidateNodeListCaches(const QualifiedName* attrName = 0) const;
     void invalidateNodeListCaches(const QualifiedName* attrName);
 
@@ -736,6 +729,7 @@ public:
     void nodeChildrenWillBeRemoved(ContainerNode*);
     // nodeWillBeRemoved is only safe when removing one node at a time.
     void nodeWillBeRemoved(Node*);
+    bool canReplaceChild(Node* newChild, Node* oldChild);
 
     void textInserted(Node*, unsigned offset, unsigned length);
     void textRemoved(Node*, unsigned offset, unsigned length);
@@ -1083,7 +1077,7 @@ public:
 
     // W3C API
     bool webkitFullscreenEnabled() const;
-    Element* webkitFullscreenElement() const { return !m_fullScreenElementStack.isEmpty() ? m_fullScreenElementStack.first().get() : 0; }
+    Element* webkitFullscreenElement() const { return !m_fullScreenElementStack.isEmpty() ? m_fullScreenElementStack.last().get() : 0; }
     void webkitExitFullscreen();
 #endif
 
@@ -1140,6 +1134,10 @@ public:
 
     IntSize viewportSize() const;
 
+#if ENABLE(CSS_DEVICE_ADAPTATION)
+    IntSize initialViewportSize() const;
+#endif
+
 #if ENABLE(LINK_PRERENDER)
     Prerenderer* prerenderer() { return m_prerenderer.get(); }
 #endif
@@ -1156,7 +1154,7 @@ public:
 
     virtual void reportMemoryUsage(MemoryObjectInfo*) const OVERRIDE;
 
-    PassRefPtr<ElementAttributeData> cachedImmutableAttributeData(const Element*, const Vector<Attribute>&);
+    DocumentSharedObjectPool* sharedObjectPool() { return m_sharedObjectPool.get(); }
 
     void didRemoveAllPendingStylesheet();
     void setNeedsNotifyRemoveAllPendingStylesheet() { m_needsNotifyRemoveAllPendingStylesheet = true; }
@@ -1167,6 +1165,12 @@ public:
 
     // Return a Locale for the default locale if the argument is null or empty.
     Locale& getCachedLocale(const AtomicString& locale = nullAtom);
+
+#if ENABLE(DIALOG_ELEMENT)
+    void addToTopLayer(Element*);
+    void removeFromTopLayer(Element*);
+    const Vector<RefPtr<Element> >& topLayerElements() const { return m_topLayerElements; }
+#endif
 
 protected:
     Document(Frame*, const KURL&, bool isXHTML, bool isHTML);
@@ -1194,7 +1198,6 @@ private:
     virtual NodeType nodeType() const;
     virtual bool childTypeAllowed(NodeType) const;
     virtual PassRefPtr<Node> cloneNode(bool deep);
-    virtual bool canReplaceChild(Node* newChild, Node* oldChild);
 
     virtual void refScriptExecutionContext() { ref(); }
     virtual void derefScriptExecutionContext() { deref(); }
@@ -1233,7 +1236,7 @@ private:
     PageVisibilityState visibilityState() const;
 #endif
 
-    PassRefPtr<HTMLCollection> cachedCollection(CollectionType);
+    PassRefPtr<HTMLCollection> ensureCachedCollection(CollectionType);
 
 #if ENABLE(FULLSCREEN_API)
     void clearFullscreenElementStack();
@@ -1362,7 +1365,7 @@ private:
 
     OwnPtr<RenderArena> m_renderArena;
 
-    mutable AXObjectCache* m_axObjectCache;
+    OwnPtr<AXObjectCache> m_axObjectCache;
     OwnPtr<DocumentMarkerController> m_markers;
     
     Timer<Document> m_updateFocusAppearanceTimer;
@@ -1402,13 +1405,8 @@ private:
 
     InheritedBool m_designMode;
 
-    HashSet<DynamicNodeListCacheBase*> m_listsInvalidatedAtDocument;
+    HashSet<LiveNodeListBase*> m_listsInvalidatedAtDocument;
     unsigned m_nodeListCounts[numNodeListInvalidationTypes];
-
-    HTMLCollection* m_collections[NumUnnamedDocumentCachedTypes];
-    typedef HashMap<AtomicString, HTMLNameCollection*> NamedCollectionMap;
-    NamedCollectionMap m_documentNamedItemCollections;
-    NamedCollectionMap m_windowNamedItemCollections;
 
     RefPtr<XPathEvaluator> m_xpathEvaluator;
 
@@ -1458,7 +1456,7 @@ private:
 #if ENABLE(FULLSCREEN_API)
     bool m_areKeysEnabledInFullScreen;
     RefPtr<Element> m_fullScreenElement;
-    Deque<RefPtr<Element> > m_fullScreenElementStack;
+    Vector<RefPtr<Element> > m_fullScreenElementStack;
     RenderFullScreen* m_fullScreenRenderer;
     Timer<Document> m_fullScreenChangeDelayTimer;
     Deque<RefPtr<Node> > m_fullScreenChangeEventTargetQueue;
@@ -1466,6 +1464,10 @@ private:
     bool m_isAnimatingFullScreen;
     LayoutRect m_savedPlaceholderFrameRect;
     RefPtr<RenderStyle> m_savedPlaceholderRenderStyle;
+#endif
+
+#if ENABLE(DIALOG_ELEMENT)
+    Vector<RefPtr<Element> > m_topLayerElements;
 #endif
 
     int m_loadEventDelayCount;
@@ -1514,7 +1516,10 @@ private:
     RefPtr<DOMSecurityPolicy> m_domSecurityPolicy;
 #endif
 
-    ImmutableAttributeDataCache m_immutableAttributeDataCache;
+    void sharedObjectPoolClearTimerFired(Timer<Document>*);
+    Timer<Document> m_sharedObjectPoolClearTimer;
+
+    OwnPtr<DocumentSharedObjectPool> m_sharedObjectPool;
 
 #ifndef NDEBUG
     bool m_didDispatchViewportPropertiesChanged;
@@ -1535,6 +1540,11 @@ inline void Document::notifyRemovePendingSheetIfNeeded()
 inline bool Node::isDocumentNode() const
 {
     return this == m_document;
+}
+
+inline TreeScope* Node::treeScope() const
+{
+    return hasRareData() ? m_data.m_rareData->treeScope() : documentInternal();
 }
 
 inline Node::Node(Document* document, ConstructionType type)

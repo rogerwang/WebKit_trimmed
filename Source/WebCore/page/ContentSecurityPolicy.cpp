@@ -37,6 +37,7 @@
 #include "InspectorValues.h"
 #include "KURL.h"
 #include "PingLoader.h"
+#include "RuntimeEnabledFeatures.h"
 #include "SchemeRegistry.h"
 #include "ScriptCallStack.h"
 #include "ScriptCallStackFactory.h"
@@ -1280,7 +1281,10 @@ void CSPDirectiveList::applySandboxPolicy(const String& name, const String& sand
         return;
     }
     m_haveSandboxPolicy = true;
-    m_policy->enforceSandboxFlags(SecurityContext::parseSandboxPolicy(sandboxPolicy));
+    String invalidTokens;
+    m_policy->enforceSandboxFlags(SecurityContext::parseSandboxPolicy(sandboxPolicy, invalidTokens));
+    if (!invalidTokens.isNull())
+        m_policy->reportInvalidSandboxFlags(invalidTokens);
 }
 
 void CSPDirectiveList::addDirective(const String& name, const String& value)
@@ -1310,7 +1314,7 @@ void CSPDirectiveList::addDirective(const String& name, const String& value)
     else if (equalIgnoringCase(name, reportURI))
         parseReportURI(name, value);
 #if ENABLE(CSP_NEXT)
-    else if (m_experimental) {
+    else if (m_experimental && m_policy->experimentalFeaturesEnabled()) {
         if (equalIgnoringCase(name, formAction))
             setCSPDirective<SourceListDirective>(name, value, m_formAction);
         else if (equalIgnoringCase(name, pluginTypes))
@@ -1654,6 +1658,11 @@ void ContentSecurityPolicy::reportInvalidPluginTypes(const String& pluginType) c
     logToConsole(message);
 }
 
+void ContentSecurityPolicy::reportInvalidSandboxFlags(const String& invalidFlags) const
+{
+    logToConsole("Error while parsing the 'sandbox' Content Security Policy directive: " + invalidFlags);
+}
+
 void ContentSecurityPolicy::reportInvalidDirectiveValueCharacter(const String& directiveName, const String& value) const
 {
     String message = makeString("The value for Content Security Policy directive '", directiveName, "' contains an invalid character: '", value, "'. Non-whitespace characters outside ASCII 0x21-0x7E must be percent-encoded, as described in RFC 3986, section 2.1: http://tools.ietf.org/html/rfc3986#section-2.1.");
@@ -1700,6 +1709,15 @@ void ContentSecurityPolicy::logToConsole(const String& message, const String& co
 void ContentSecurityPolicy::reportBlockedScriptExecutionToInspector(const String& directiveText) const
 {
     InspectorInstrumentation::scriptExecutionBlockedByCSP(m_scriptExecutionContext, directiveText);
+}
+
+bool ContentSecurityPolicy::experimentalFeaturesEnabled() const
+{
+#if ENABLE(CSP_NEXT)
+    return RuntimeEnabledFeatures::experimentalContentSecurityPolicyFeaturesEnabled();
+#else
+    return false;
+#endif
 }
 
 }

@@ -28,6 +28,10 @@
 
 #include "ConnectionStack.h"
 #include "NetworkProcess.h"
+#include "NetworkResourceLoader.h"
+#include "RemoteNetworkingContext.h"
+#include <WebCore/PlatformCookieJar.h>
+#include <WebCore/ResourceLoaderOptions.h>
 #include <WebCore/ResourceRequest.h>
 #include <WebCore/RunLoop.h>
 
@@ -74,6 +78,13 @@ void NetworkConnectionToWebProcess::didReceiveMessage(CoreIPC::Connection* conne
         didReceiveNetworkConnectionToWebProcessMessage(connection, messageID, decoder);
         return;
     }
+    
+    if (messageID.is<CoreIPC::MessageClassNetworkResourceLoader>()) {
+        NetworkResourceLoader* loader = NetworkProcess::shared().networkResourceLoadScheduler().networkResourceLoaderForIdentifier(decoder.destinationID());
+        if (loader)
+            loader->didReceiveNetworkResourceLoaderMessage(connection, messageID, decoder);
+        return;
+    }
     ASSERT_NOT_REACHED();
 }
 
@@ -108,12 +119,12 @@ void NetworkConnectionToWebProcess::didReceiveInvalidMessage(CoreIPC::Connection
 {
 }
 
-void NetworkConnectionToWebProcess::scheduleNetworkRequest(const ResourceRequest& request, uint32_t resourceLoadPriority, ResourceLoadIdentifier& resourceLoadIdentifier)
+void NetworkConnectionToWebProcess::scheduleResourceLoad(const NetworkResourceLoadParameters& loadParameters, ResourceLoadIdentifier& resourceLoadIdentifier)
 {
-    resourceLoadIdentifier = NetworkProcess::shared().networkResourceLoadScheduler().scheduleNetworkRequest(request, static_cast<ResourceLoadPriority>(resourceLoadPriority), this);
+    resourceLoadIdentifier = NetworkProcess::shared().networkResourceLoadScheduler().scheduleResourceLoad(loadParameters, this);
 }
 
-void NetworkConnectionToWebProcess::addLoadInProgress(const WebCore::KURL& url, ResourceLoadIdentifier& identifier)
+void NetworkConnectionToWebProcess::addLoadInProgress(const KURL& url, ResourceLoadIdentifier& identifier)
 {
     identifier = NetworkProcess::shared().networkResourceLoadScheduler().addLoadInProgress(url);
 }
@@ -121,11 +132,6 @@ void NetworkConnectionToWebProcess::addLoadInProgress(const WebCore::KURL& url, 
 void NetworkConnectionToWebProcess::removeLoadIdentifier(ResourceLoadIdentifier identifier)
 {
     NetworkProcess::shared().networkResourceLoadScheduler().removeLoadIdentifier(identifier);
-}
-
-void NetworkConnectionToWebProcess::crossOriginRedirectReceived(ResourceLoadIdentifier identifier, const KURL& redirectURL)
-{
-    NetworkProcess::shared().networkResourceLoadScheduler().crossOriginRedirectReceived(identifier, redirectURL);
 }
 
 void NetworkConnectionToWebProcess::servePendingRequests(uint32_t resourceLoadPriority)
@@ -146,6 +152,62 @@ void NetworkConnectionToWebProcess::resumePendingRequests()
 void NetworkConnectionToWebProcess::setSerialLoadingEnabled(bool enabled)
 {
     m_serialLoadingEnabled = enabled;
+}
+
+void NetworkConnectionToWebProcess::cookiesForDOM(const KURL& firstParty, const KURL& url, String& result)
+{
+    // FIXME (NetworkProcess): Use a correct storage session.
+    result = WebCore::cookiesForDOM(RemoteNetworkingContext::create(false, false).get(), firstParty, url);
+}
+
+void NetworkConnectionToWebProcess::setCookiesFromDOM(const KURL& firstParty, const KURL& url, const String& cookieString)
+{
+    // FIXME (NetworkProcess): Use a correct storage session.
+    WebCore::setCookiesFromDOM(RemoteNetworkingContext::create(false, false).get(), firstParty, url, cookieString);
+}
+
+void NetworkConnectionToWebProcess::cookiesEnabled(const KURL& firstParty, const KURL& url, bool& result)
+{
+    // FIXME (NetworkProcess): Use a correct storage session.
+    result = WebCore::cookiesEnabled(RemoteNetworkingContext::create(false, false).get(), firstParty, url);
+}
+
+void NetworkConnectionToWebProcess::cookieRequestHeaderFieldValue(const KURL& firstParty, const KURL& url, String& result)
+{
+    // FIXME (NetworkProcess): Use a correct storage session.
+    result = WebCore::cookieRequestHeaderFieldValue(0, firstParty, url);
+}
+
+void NetworkConnectionToWebProcess::getRawCookies(const KURL& firstParty, const KURL& url, Vector<Cookie>& result)
+{
+    // FIXME (NetworkProcess): Use a correct storage session.
+    WebCore::getRawCookies(RemoteNetworkingContext::create(false, false).get(), firstParty, url, result);
+}
+
+void NetworkConnectionToWebProcess::deleteCookie(const KURL& url, const String& cookieName)
+{
+    // FIXME (NetworkProcess): Use a correct storage session.
+    WebCore::deleteCookie(RemoteNetworkingContext::create(false, false).get(), url, cookieName);
+}
+
+void NetworkConnectionToWebProcess::getHostnamesWithCookies(Vector<String>& hostnames)
+{
+    // FIXME (NetworkProcess): Use a correct storage session.
+    HashSet<String> hostnamesSet;
+    WebCore::getHostnamesWithCookies(RemoteNetworkingContext::create(false, false).get(), hostnamesSet);
+    WTF::copyToVector(hostnamesSet, hostnames);
+}
+
+void NetworkConnectionToWebProcess::deleteCookiesForHostname(const String& hostname)
+{
+    // FIXME (NetworkProcess): Use a correct storage session.
+    WebCore::deleteCookiesForHostname(RemoteNetworkingContext::create(false, false).get(), hostname);
+}
+
+void NetworkConnectionToWebProcess::deleteAllCookies()
+{
+    // FIXME (NetworkProcess): Use a correct storage session.
+    WebCore::deleteAllCookies(RemoteNetworkingContext::create(false, false).get());
 }
 
 } // namespace WebKit

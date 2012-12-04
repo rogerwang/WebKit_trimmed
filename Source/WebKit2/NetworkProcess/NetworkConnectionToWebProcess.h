@@ -74,7 +74,7 @@ private:
     void didReceiveNetworkConnectionToWebProcessMessage(CoreIPC::Connection*, CoreIPC::MessageID, CoreIPC::MessageDecoder&);
     void didReceiveSyncNetworkConnectionToWebProcessMessage(CoreIPC::Connection*, CoreIPC::MessageID, CoreIPC::MessageDecoder&, OwnPtr<CoreIPC::MessageEncoder>&);
     
-    void scheduleNetworkRequest(const WebCore::ResourceRequest&, uint32_t resourceLoadPriority, ResourceLoadIdentifier&);
+    void scheduleResourceLoad(const NetworkResourceLoadParameters&, ResourceLoadIdentifier&);
     void addLoadInProgress(const WebCore::KURL&, ResourceLoadIdentifier&);
     void removeLoadIdentifier(ResourceLoadIdentifier);
     void crossOriginRedirectReceived(ResourceLoadIdentifier, const WebCore::KURL& redirectURL);
@@ -82,7 +82,16 @@ private:
     void suspendPendingRequests();
     void resumePendingRequests();
     void setSerialLoadingEnabled(bool);
-    
+    void cookiesForDOM(const WebCore::KURL& firstParty, const WebCore::KURL&, String& result);
+    void setCookiesFromDOM(const WebCore::KURL& firstParty, const WebCore::KURL&, const String&);
+    void cookiesEnabled(const WebCore::KURL& firstParty, const WebCore::KURL&, bool& result);
+    void cookieRequestHeaderFieldValue(const WebCore::KURL& firstParty, const WebCore::KURL&, String& result);
+    void getRawCookies(const WebCore::KURL& firstParty, const WebCore::KURL&, Vector<WebCore::Cookie>&);
+    void deleteCookie(const WebCore::KURL&, const String& cookieName);
+    void getHostnamesWithCookies(Vector<String>& hostnames);
+    void deleteCookiesForHostname(const String& hostname);
+    void deleteAllCookies();
+
     RefPtr<CoreIPC::Connection> m_connection;
     
     HashSet<NetworkConnectionToWebProcessObserver*> m_observers;

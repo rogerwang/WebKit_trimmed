@@ -5,29 +5,12 @@ if (this.importScripts) {
 
 description("Test IndexedDB's cursor update.");
 
-test();
-
-function test()
+indexedDBTest(prepareDatabase);
+function prepareDatabase()
 {
-    removeVendorPrefixes();
-    request = evalAndLog("indexedDB.open('cursor-update')");
-    request.onsuccess = openSuccess;
-    request.onerror = unexpectedErrorCallback;
-}
-
-function openSuccess()
-{
-    var db = evalAndLog("db = event.target.result");
-
-    request = evalAndLog("db.setVersion('new version')");
-    request.onsuccess = setVersionSuccess;
-    request.onerror = unexpectedErrorCallback;
-}
-
-function setVersionSuccess()
-{
+    db = event.target.result;
     debug("setVersionSuccess():");
-    self.trans = evalAndLog("trans = event.target.result");
+    self.trans = evalAndLog("trans = event.target.transaction");
     shouldBeNonNull("trans");
     trans.onabort = unexpectedAbortCallback;
     trans.oncomplete = openBasicCursor;
@@ -157,7 +140,7 @@ function keyPathUpdateCursor()
         return;
     }
 
-    evalAndExpectException("event.target.result.update({id: 100 + counter, number: 100 + counter})", "IDBDatabaseException.DATA_ERR", "'DataError'");
+    evalAndExpectException("event.target.result.update({id: 100 + counter, number: 100 + counter})", "0", "'DataError'");
 
     request = evalAndLog("event.target.result.update({id: counter, number: 100 + counter++})");
     request.onsuccess = function() { evalAndLog("event.target.source.continue()"); };
@@ -222,8 +205,7 @@ function attemptUpdate()
     debug("attemptUpdate()");
     self.cursor = event.target.result;
     if (self.cursor) {
-        evalAndExpectException("cursor.update('myUpdatedValue')",
-                               "IDBDatabaseException.READ_ONLY_ERR", "'ReadOnlyError'");
+        evalAndExpectException("cursor.update('myUpdatedValue')", "0", "'ReadOnlyError'");
         evalAndLog("cursor.continue()");
     }
 }

@@ -121,6 +121,7 @@
     <file>Object.js</file>
     <file>ObjectPopoverHelper.js</file>
     <file>ObjectPropertiesSection.js</file>
+    <file>OverridesView.js</file>
     <file>Panel.js</file>
     <file>PanelEnablerView.js</file>
     <file>ParsedURL.js</file>
@@ -202,6 +203,7 @@
     <file>TimelineGrid.js</file>
     <file>TimelineOverviewPane.js</file>
     <file>TimelinePanel.js</file>
+    <file>TimelinePanelDescriptor.js</file>
     <file>Toolbar.js</file>
     <file>TopDownProfileDataGridTree.js</file>
     <file>treeoutline.js</file>

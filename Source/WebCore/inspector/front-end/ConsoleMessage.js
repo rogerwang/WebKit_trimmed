@@ -322,22 +322,40 @@ WebInspector.ConsoleMessageImpl.prototype = {
                 titleElement.createTextChild(": ");
             }
 
-            var span = titleElement.createChild("span", "console-formatted-" + property.type);
-            if (property.type === "object") {
-                if (property.subtype === "node")
-                    span.addStyleClass("console-formatted-preview-node");
-                else if (property.subtype === "regexp")
-                    span.addStyleClass("console-formatted-string");
-                span.textContent = property.value;
-            } else if (property.type === "function")
-                span.textContent = "function";
-            else
-                span.textContent = property.value;
+            this._appendPropertyPreview(titleElement, property);
         }
         if (preview.overflow)
             titleElement.createChild("span").textContent = "\u2026";
         titleElement.createTextChild(isArray ? "]" : "}");
         return preview.lossless;
+    },
+
+    /**
+     * @param {Element} titleElement
+     * @param {RuntimeAgent.PropertyPreview} property
+     */
+    _appendPropertyPreview: function(titleElement, property)
+    {
+        var span = titleElement.createChild("span", "console-formatted-" + property.type);
+
+        if (property.type === "function") {
+            span.textContent = "function";
+            return;
+        }
+
+        if (property.type === "object" && property.subtype === "regexp") {
+            span.addStyleClass("console-formatted-string");
+            span.textContent = property.value;
+            return;
+        }
+
+        if (property.type === "object" && property.subtype === "node") {
+            span.addStyleClass("console-formatted-preview-node");
+            WebInspector.DOMPresentationUtils.createSpansForNodeTitle(span, property.value);
+            return;
+        }
+
+        span.textContent = property.value;
     },
 
     _formatParameterAsNode: function(object, elem)
@@ -477,14 +495,16 @@ WebInspector.ConsoleMessageImpl.prototype = {
             return Math.floor(obj.value);
         }
 
+        var currentStyle = null;
         function styleFormatter(obj)
         {
+            currentStyle = {};
             var buffer = document.createElement("span");
             buffer.setAttribute("style", obj.description);
             for (var i = 0; i < buffer.style.length; i++) {
                 var property = buffer.style[i];
                 if (isWhitelistedProperty(property))
-                    formattedResult.style[property] = buffer.style[property];
+                    currentStyle[property] = buffer.style[property];
             }
         }
 
@@ -516,8 +536,17 @@ WebInspector.ConsoleMessageImpl.prototype = {
         {
             if (b instanceof Node)
                 a.appendChild(b);
-            else if (b)
-                a.appendChild(WebInspector.linkifyStringAsFragment(b.toString()));
+            else if (b) {
+                var toAppend = WebInspector.linkifyStringAsFragment(b.toString());
+                if (currentStyle) {
+                    var wrapper = document.createElement('span');
+                    for (var key in currentStyle)
+                        wrapper.style[key] = currentStyle[key];
+                    wrapper.appendChild(toAppend);
+                    toAppend = wrapper;
+                }
+                a.appendChild(toAppend);
+            }
             return a;
         }
 

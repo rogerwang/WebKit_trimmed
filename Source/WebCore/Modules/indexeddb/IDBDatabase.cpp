@@ -36,7 +36,6 @@
 #include "IDBDatabaseError.h"
 #include "IDBDatabaseException.h"
 #include "IDBEventDispatcher.h"
-#include "IDBFactoryBackendInterface.h"
 #include "IDBIndex.h"
 #include "IDBKeyPath.h"
 #include "IDBObjectStore.h"
@@ -48,6 +47,8 @@
 #include "ScriptCallStack.h"
 #include "ScriptExecutionContext.h"
 #include <limits>
+#include <wtf/Atomics.h>
+#include <wtf/Threading.h>
 
 namespace WebCore {
 
@@ -64,7 +65,6 @@ IDBDatabase::IDBDatabase(ScriptExecutionContext* context, PassRefPtr<IDBDatabase
     , m_closePending(false)
     , m_contextStopped(false)
     , m_databaseCallbacks(callbacks)
-    , m_didSpamConsole(false)
 {
     // We pass a reference of this object before it can be adopted.
     relaxAdoptionRequirement();
@@ -74,6 +74,14 @@ IDBDatabase::IDBDatabase(ScriptExecutionContext* context, PassRefPtr<IDBDatabase
 IDBDatabase::~IDBDatabase()
 {
     close();
+}
+
+int64_t IDBDatabase::nextTransactionId()
+{
+    // Only keep a 32-bit counter to allow ports to use the other 32
+    // bits of the id.
+    AtomicallyInitializedStatic(int, currentTransactionId = 0);
+    return atomicIncrement(&currentTransactionId);
 }
 
 void IDBDatabase::transactionCreated(IDBTransaction* transaction)
@@ -125,11 +133,11 @@ PassRefPtr<IDBAny> IDBDatabase::version() const
 PassRefPtr<IDBObjectStore> IDBDatabase::createObjectStore(const String& name, const Dictionary& options, ExceptionCode& ec)
 {
     if (!m_versionChangeTransaction) {
-        ec = IDBDatabaseException::IDB_INVALID_STATE_ERR;
+        ec = IDBDatabaseException::InvalidStateError;
         return 0;
     }
     if (!m_versionChangeTransaction->isActive()) {
-        ec = IDBDatabaseException::TRANSACTION_INACTIVE_ERR;
+        ec = IDBDatabaseException::TransactionInactiveError;
         return 0;
     }
 
@@ -144,12 +152,12 @@ PassRefPtr<IDBObjectStore> IDBDatabase::createObjectStore(const String& name, co
     }
 
     if (containsObjectStore(name)) {
-        ec = IDBDatabaseException::CONSTRAINT_ERR;
+        ec = IDBDatabaseException::ConstraintError;
         return 0;
     }
 
     if (!keyPath.isNull() && !keyPath.isValid()) {
-        ec = IDBDatabaseException::IDB_SYNTAX_ERR;
+        ec = IDBDatabaseException::SyntaxError;
         return 0;
     }
 
@@ -158,7 +166,7 @@ PassRefPtr<IDBObjectStore> IDBDatabase::createObjectStore(const String& name, co
         options.get("autoIncrement", autoIncrement);
 
     if (autoIncrement && ((keyPath.type() == IDBKeyPath::StringType && keyPath.string().isEmpty()) || keyPath.type() == IDBKeyPath::ArrayType)) {
-        ec = IDBDatabaseException::IDB_INVALID_ACCESS_ERR;
+        ec = IDBDatabaseException::InvalidAccessError;
         return 0;
     }
 
@@ -181,17 +189,17 @@ PassRefPtr<IDBObjectStore> IDBDatabase::createObjectStore(const String& name, co
 void IDBDatabase::deleteObjectStore(const String& name, ExceptionCode& ec)
 {
     if (!m_versionChangeTransaction) {
-        ec = IDBDatabaseException::IDB_INVALID_STATE_ERR;
+        ec = IDBDatabaseException::InvalidStateError;
         return;
     }
     if (!m_versionChangeTransaction->isActive()) {
-        ec = IDBDatabaseException::TRANSACTION_INACTIVE_ERR;
+        ec = IDBDatabaseException::TransactionInactiveError;
         return;
     }
 
-    int64 objectStoreId = findObjectStoreId(name);
+    int64_t objectStoreId = findObjectStoreId(name);
     if (objectStoreId == IDBObjectStoreMetadata::InvalidId) {
-        ec = IDBDatabaseException::IDB_NOT_FOUND_ERR;
+        ec = IDBDatabaseException::NotFoundError;
         return;
     }
 
@@ -202,36 +210,10 @@ void IDBDatabase::deleteObjectStore(const String& name, ExceptionCode& ec)
     }
 }
 
-PassRefPtr<IDBVersionChangeRequest> IDBDatabase::setVersion(ScriptExecutionContext* context, const String& version, ExceptionCode& ec)
+PassRefPtr<IDBTransaction> IDBDatabase::transaction(ScriptExecutionContext* context, const Vector<String>& scope, const String& modeString, ExceptionCode& ec)
 {
-    if (!m_didSpamConsole) {
-        String consoleMessage = ASCIILiteral("The setVersion() method is non-standard and will be removed. Use the \"upgradeneeded\" event instead.");
-        context->addConsoleMessage(JSMessageSource, LogMessageType, WarningMessageLevel, consoleMessage);
-        m_didSpamConsole = true;
-    }
-
-    if (version.isNull()) {
-        ec = NATIVE_TYPE_ERR;
-        return 0;
-    }
-
-    if (m_versionChangeTransaction) {
-        ec = IDBDatabaseException::IDB_INVALID_STATE_ERR;
-        return 0;
-    }
-
-    RefPtr<IDBVersionChangeRequest> request = IDBVersionChangeRequest::create(context, IDBAny::create(this), version);
-    ASSERT(m_backend);
-    m_backend->setVersion(version, request, m_databaseCallbacks, ec);
-    return request;
-}
-
-PassRefPtr<IDBTransaction> IDBDatabase::transaction(ScriptExecutionContext* context, PassRefPtr<DOMStringList> prpStoreNames, const String& modeString, ExceptionCode& ec)
-{
-    RefPtr<DOMStringList> storeNames = prpStoreNames;
-    ASSERT(storeNames.get());
-    if (storeNames->isEmpty()) {
-        ec = IDBDatabaseException::IDB_INVALID_ACCESS_ERR;
+    if (!scope.size()) {
+        ec = IDBDatabaseException::InvalidAccessError;
         return 0;
     }
 
@@ -240,15 +222,15 @@ PassRefPtr<IDBTransaction> IDBDatabase::transaction(ScriptExecutionContext* cont
         return 0;
 
     if (m_versionChangeTransaction || m_closePending) {
-        ec = IDBDatabaseException::IDB_INVALID_STATE_ERR;
+        ec = IDBDatabaseException::InvalidStateError;
         return 0;
     }
 
     Vector<int64_t> objectStoreIds;
-    for (size_t i = 0; i < storeNames->length(); ++i) {
-        int64_t objectStoreId = findObjectStoreId(storeNames->item(i));
+    for (size_t i = 0; i < scope.size(); ++i) {
+        int64_t objectStoreId = findObjectStoreId(scope[i]);
         if (objectStoreId == IDBObjectStoreMetadata::InvalidId) {
-            ec = IDBDatabaseException::IDB_NOT_FOUND_ERR;
+            ec = IDBDatabaseException::NotFoundError;
             return 0;
         }
         objectStoreIds.append(objectStoreId);
@@ -258,12 +240,14 @@ PassRefPtr<IDBTransaction> IDBDatabase::transaction(ScriptExecutionContext* cont
     // can be queued against the transaction at any point. They will start executing as soon as the
     // appropriate locks have been acquired.
     // Also note that each backend object corresponds to exactly one IDBTransaction object.
-    RefPtr<IDBTransactionBackendInterface> transactionBackend = m_backend->transaction(objectStoreIds, mode);
+    int64_t transactionId = nextTransactionId();
+    RefPtr<IDBTransactionBackendInterface> transactionBackend = m_backend->createTransaction(transactionId, objectStoreIds, mode);
     if (!transactionBackend) {
         ASSERT(ec);
         return 0;
     }
-    RefPtr<IDBTransaction> transaction = IDBTransaction::create(context, transactionBackend, *storeNames, mode, this);
+
+    RefPtr<IDBTransaction> transaction = IDBTransaction::create(context, transactionId, transactionBackend, scope, mode, this);
     transactionBackend->setCallbacks(transaction.get());
     return transaction.release();
 }

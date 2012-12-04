@@ -1,4 +1,3 @@
-CONSOLE MESSAGE: The setVersion() method is non-standard and will be removed. Use the "upgradeneeded" event instead.
 Test IndexedDB's cursor update.
 
 On success, you will see a series of "PASS" messages, followed by "TEST COMPLETE".
@@ -6,11 +5,11 @@ On success, you will see a series of "PASS" messages, followed by "TEST COMPLETE
 
 indexedDB = self.indexedDB || self.webkitIndexedDB || self.mozIndexedDB || self.msIndexedDB || self.OIndexedDB;
 
-indexedDB.open('cursor-update')
-db = event.target.result
-db.setVersion('new version')
+dbname = "cursor-update.html"
+indexedDB.deleteDatabase(dbname)
+indexedDB.open(dbname)
 setVersionSuccess():
-trans = event.target.result
+trans = event.target.transaction
 PASS trans is non-null.
 Deleted all object stores.
 objectStore = db.createObjectStore('basicStore')
@@ -109,28 +108,28 @@ trans.objectStore('keyPathStore').openCursor(keyRange)
 keyPathUpdateCursor()
 Expecting exception from event.target.result.update({id: 100 + counter, number: 100 + counter})
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.DATA_ERR
+PASS code is 0
 PASS ename is 'DataError'
 event.target.result.update({id: counter, number: 100 + counter++})
 event.target.source.continue()
 keyPathUpdateCursor()
 Expecting exception from event.target.result.update({id: 100 + counter, number: 100 + counter})
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.DATA_ERR
+PASS code is 0
 PASS ename is 'DataError'
 event.target.result.update({id: counter, number: 100 + counter++})
 event.target.source.continue()
 keyPathUpdateCursor()
 Expecting exception from event.target.result.update({id: 100 + counter, number: 100 + counter})
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.DATA_ERR
+PASS code is 0
 PASS ename is 'DataError'
 event.target.result.update({id: counter, number: 100 + counter++})
 event.target.source.continue()
 keyPathUpdateCursor()
 Expecting exception from event.target.result.update({id: 100 + counter, number: 100 + counter})
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.DATA_ERR
+PASS code is 0
 PASS ename is 'DataError'
 event.target.result.update({id: counter, number: 100 + counter++})
 event.target.source.continue()
@@ -201,25 +200,25 @@ objectStore.openCursor(keyRange)
 attemptUpdate()
 Expecting exception from cursor.update('myUpdatedValue')
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.READ_ONLY_ERR
+PASS code is 0
 PASS ename is 'ReadOnlyError'
 cursor.continue()
 attemptUpdate()
 Expecting exception from cursor.update('myUpdatedValue')
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.READ_ONLY_ERR
+PASS code is 0
 PASS ename is 'ReadOnlyError'
 cursor.continue()
 attemptUpdate()
 Expecting exception from cursor.update('myUpdatedValue')
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.READ_ONLY_ERR
+PASS code is 0
 PASS ename is 'ReadOnlyError'
 cursor.continue()
 attemptUpdate()
 Expecting exception from cursor.update('myUpdatedValue')
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.READ_ONLY_ERR
+PASS code is 0
 PASS ename is 'ReadOnlyError'
 cursor.continue()
 attemptUpdate()

@@ -71,6 +71,14 @@ public:
     static bool cssExclusionsEnabled() { return false; }
 #endif
 
+#if ENABLE(CSS_REGIONS)
+    static void setCSSRegionsEnabled(bool isEnabled) { isCSSRegionsEnabled = isEnabled; }
+    static bool cssRegionsEnabled() { return isCSSRegionsEnabled; }
+#else
+    static void setCSSRegionsEnabled(bool) { }
+    static bool cssRegionsEnabled() { return false; }
+#endif
+
 #if ENABLE(FULLSCREEN_API)
     // Mozilla version
     static bool webkitFullScreenAPIEnabled() { return isFullScreenAPIEnabled; }
@@ -86,11 +94,6 @@ public:
     static bool webkitFullscreenElementEnabled() { return isFullScreenAPIEnabled; }
     static bool webkitExitFullscreenEnabled() { return isFullScreenAPIEnabled; }
     static bool webkitRequestFullscreenEnabled() { return isFullScreenAPIEnabled; }
-#endif
-
-#if ENABLE(POINTER_LOCK)
-    static bool pointerLockEnabled() { return isPointerLockEnabled; }
-    static void setPointerLockEnabled(bool isEnabled) { isPointerLockEnabled = isEnabled; }
 #endif
 
 #if ENABLE(VIDEO)
@@ -252,6 +255,11 @@ public:
     static void setDialogElementEnabled(bool isEnabled) { isDialogElementEnabled = isEnabled; }
 #endif
 
+#if ENABLE(CSP_NEXT)
+    static bool experimentalContentSecurityPolicyFeaturesEnabled() { return areExperimentalContentSecurityPolicyFeaturesEnabled; }
+    static void setExperimentalContentSecurityPolicyFeaturesEnabled(bool isEnabled) { areExperimentalContentSecurityPolicyFeaturesEnabled = isEnabled; }
+#endif
+
     static bool langAttributeAwareFormControlUIEnabled() { return isLangAttributeAwareFormControlUIEnabled; }
     // The lang attribute support is incomplete and should only be turned on for tests.
     static void setLangAttributeAwareFormControlUIEnabled(bool isEnabled) { isLangAttributeAwareFormControlUIEnabled = isEnabled; }
@@ -279,6 +287,7 @@ private:
     static bool isDeviceOrientationEnabled;
     static bool isSpeechInputEnabled;
     static bool isCSSExclusionsEnabled;
+    static bool isCSSRegionsEnabled;
     WEBCORE_TESTING static bool isLangAttributeAwareFormControlUIEnabled;
 #if ENABLE(SCRIPTED_SPEECH)
     static bool isScriptedSpeechEnabled;
@@ -306,10 +315,6 @@ private:
 
 #if ENABLE(FULLSCREEN_API)
     static bool isFullScreenAPIEnabled;
-#endif
-
-#if ENABLE(POINTER_LOCK)
-    static bool isPointerLockEnabled;
 #endif
 
 #if ENABLE(MEDIA_SOURCE)
@@ -364,6 +369,10 @@ private:
 
 #if ENABLE(REQUEST_AUTOCOMPLETE)
     static bool isRequestAutocompleteEnabled;
+#endif
+
+#if ENABLE(CSP_NEXT)
+    static bool areExperimentalContentSecurityPolicyFeaturesEnabled;
 #endif
 };
 

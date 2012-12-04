@@ -5,33 +5,13 @@ if (this.importScripts) {
 
 description("Test IndexedDB keyPath edge cases");
 
-function test()
+indexedDBTest(prepareDatabase, testKeyPaths);
+function prepareDatabase()
 {
-    removeVendorPrefixes();
-
-    request = evalAndLog("indexedDB.deleteDatabase('keypath-edges')");
-    request.onerror = unexpectedErrorCallback;
-    request.onsuccess = function () {
-        request = evalAndLog("indexedDB.open('keypath-edges')");
-        request.onerror = unexpectedErrorCallback;
-        request.onsuccess = openSuccess;
-    };
-}
-
-function openSuccess()
-{
-    debug("");
-    debug("openSuccess():");
-    db = evalAndLog("db = event.target.result");
-    request = evalAndLog("request = db.setVersion('1')");
-    request.onerror = unexpectedErrorCallback;
-    request.onsuccess = function () {
-        transaction = request.result;
-        transaction.onabort = unexpectedAbortCallback;
-        evalAndLog("db.createObjectStore('store-with-path', {keyPath: 'foo'})");
-        evalAndLog("db.createObjectStore('store-with-path-and-generator', {keyPath: 'foo', autoIncrement: true})");
-        transaction.oncomplete = testKeyPaths;
-    };
+    db = event.target.result;
+    event.target.transaction.onabort = unexpectedAbortCallback;
+    evalAndLog("db.createObjectStore('store-with-path', {keyPath: 'foo'})");
+    evalAndLog("db.createObjectStore('store-with-path-and-generator', {keyPath: 'foo', autoIncrement: true})");
 }
 
 function testKeyPaths()
@@ -44,15 +24,15 @@ function testKeyPaths()
 
     debug("");
     debug("Key path doesn't resolve to a value; should yield null, should throw DATA_ERR");
-    evalAndExpectException("store.put(null)", "IDBDatabaseException.DATA_ERR", "'DataError'");
+    evalAndExpectException("store.put(null)", "0", "'DataError'");
 
     debug("");
     debug("Key path doesn't resolve to a value; should yield null, should throw DATA_ERR");
-    evalAndExpectException("store.put({})", "IDBDatabaseException.DATA_ERR", "'DataError'");
+    evalAndExpectException("store.put({})", "0", "'DataError'");
 
     debug("");
     debug("Key path resolves to a value that is invalid key; should yield 'invalid' key, should throw DATA_ERR");
-    evalAndExpectException("store.put({foo: null})", "IDBDatabaseException.DATA_ERR", "'DataError'");
+    evalAndExpectException("store.put({foo: null})", "0", "'DataError'");
 
     debug("");
     debug("Key path resolves to a value that is valid key; should yield 'string' key, should succeed");
@@ -76,11 +56,11 @@ function testKeyPathsAndGenerator()
 
     debug("");
     debug("Key path doesn't resolve to a value; should yield null but insertion would fail, so put request should raise exception");
-    evalAndExpectException("store.put(null)", "IDBDatabaseException.DATA_ERR", "'DataError'");
+    evalAndExpectException("store.put(null)", "0", "'DataError'");
 
     debug("");
     debug("Key path doesn't resolve to a value; should yield null but insertion would fail, so put request should raise exception");
-    evalAndExpectException("store.put('string')", "IDBDatabaseException.DATA_ERR", "'DataError'");
+    evalAndExpectException("store.put('string')", "0", "'DataError'");
 
     debug("");
     debug("Key path doesn't resolve to a value; should yield null, key should be generated, put request should succeed");
@@ -91,7 +71,7 @@ function testKeyPathsAndGenerator()
 
         debug("");
         debug("Key path resolves to a value that is invalid key; should yield 'invalid' key, should throw DATA_ERR");
-        evalAndExpectException("store.put({foo: null})", "IDBDatabaseException.DATA_ERR", "'DataError'");
+        evalAndExpectException("store.put({foo: null})", "0", "'DataError'");
 
         debug("");
         debug("Key path resolves to a value that is valid key; should yield 'string' key, should succeed");
@@ -106,5 +86,3 @@ function testKeyPathsAndGenerator()
     transaction.onabort = unexpectedAbortCallback;
     transaction.oncomplete = finishJSTest;
 }
-
-test();

@@ -45,6 +45,9 @@ SET(JavaScriptCore_SOURCES
     bytecode/CallLinkInfo.cpp
     bytecode/CallLinkStatus.cpp
     bytecode/CodeBlock.cpp
+    bytecode/CodeBlockHash.cpp
+    bytecode/CodeOrigin.cpp
+    bytecode/CodeType.cpp
     bytecode/DFGExitProfile.cpp
     bytecode/ExecutionCounter.cpp
     bytecode/GetByIdStatus.cpp
@@ -100,10 +103,13 @@ SET(JavaScriptCore_SOURCES
     dfg/DFGStructureCheckHoistingPhase.cpp
     dfg/DFGThunks.cpp
     dfg/DFGValueSource.cpp
+    dfg/DFGVariableAccessDataDump.cpp
     dfg/DFGVariableEvent.cpp
     dfg/DFGVariableEventStream.cpp
     dfg/DFGValidate.cpp
     dfg/DFGVirtualRegisterAllocationPhase.cpp
+    
+    disassembler/Disassembler.cpp
 
     heap/BlockAllocator.cpp
     heap/CopiedSpace.cpp
@@ -139,6 +145,7 @@ SET(JavaScriptCore_SOURCES
     interpreter/JSStack.cpp
     interpreter/VMInspector.cpp
 
+    jit/ClosureCallStubRoutine.cpp
     jit/ExecutableAllocator.cpp
     jit/HostCallReturnValue.cpp
     jit/GCAwareJITStubRoutine.cpp
@@ -146,7 +153,9 @@ SET(JavaScriptCore_SOURCES
     jit/JITArithmetic.cpp
     jit/JITCall32_64.cpp
     jit/JITCall.cpp
+    jit/JITCode.cpp
     jit/JIT.cpp
+    jit/JITDisassembler.cpp
     jit/JITExceptions.cpp
     jit/JITOpcodes32_64.cpp
     jit/JITOpcodes.cpp
@@ -177,6 +186,7 @@ SET(JavaScriptCore_SOURCES
     runtime/BooleanPrototype.cpp
     runtime/CallData.cpp
     runtime/CodeCache.cpp
+    runtime/CodeSpecializationKind.cpp
     runtime/CommonIdentifiers.cpp
     runtime/Completion.cpp
     runtime/ConstructData.cpp
@@ -354,11 +364,18 @@ IF (ENABLE_LLINT)
     )
     TARGET_LINK_LIBRARIES(LLIntOffsetsExtractor ${WTF_LIBRARY_NAME})
 
+    # The build system will execute asm.rb every time LLIntOffsetsExtractor's mtime is newer than
+    # LLIntAssembly.h's mtime. The problem we have here is: asm.rb has some built-in optimization
+    # that generates a checksum of the LLIntOffsetsExtractor binary, if the checksum of the new
+    # LLIntOffsetsExtractor matches, no output is generated. To make this target consistent and avoid
+    # running this command for every build, we artificially update LLIntAssembly.h's mtime (using touch)
+    # after every asm.rb run.
     ADD_CUSTOM_COMMAND(
         OUTPUT ${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}/LLIntAssembly.h
         MAIN_DEPENDENCY ${JAVASCRIPTCORE_DIR}/offlineasm/asm.rb
         DEPENDS LLIntOffsetsExtractor ${LLINT_ASM} ${OFFLINE_ASM}
         COMMAND ${RUBY_EXECUTABLE} ${JAVASCRIPTCORE_DIR}/offlineasm/asm.rb ${JAVASCRIPTCORE_DIR}/llint/LowLevelInterpreter.asm $<TARGET_FILE:LLIntOffsetsExtractor> ${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}/LLIntAssembly.h
+        COMMAND ${CMAKE_COMMAND} -E touch_nocreate ${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}/LLIntAssembly.h
         VERBATIM)
 
     # The explanation for not making LLIntAssembly.h part of the OBJECT_DEPENDS property of some of
@@ -385,6 +402,43 @@ FOREACH (_file ${JavaScriptCore_LUT_FILES})
     GENERATE_HASH_LUT(${JAVASCRIPTCORE_DIR}/${_file} ${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}/${_name}.lut.h)
     LIST(APPEND JavaScriptCore_HEADERS ${DERIVED_SOURCES_JAVASCRIPTCORE_DIR}/${_name}.lut.h)
 ENDFOREACH ()
+
+SET (JavaScriptCore_FORWARDING_HEADERS_DIRECTORIES
+    assembler
+    bytecode
+    collector/handles
+    debugger
+    heap
+    interpreter
+    jit
+    llint
+    parser
+    profiler
+    runtime
+    yarr
+)
+
+SET (JavaScriptCore_FORWARDING_HEADERS_FILES
+    API/APICast.h
+    API/APIShims.h
+    API/JavaScript.h
+    API/JSBase.h
+    API/JSContextRef.h
+    API/JSContextRefPrivate.h
+    API/JSObjectRef.h
+    API/JSObjectRefPrivate.h
+    API/JSStringRef.h
+    API/JSStringRefCF.h
+    API/JSStringRefBSTR.h
+    API/JSValueRef.h
+    API/JavaScriptCore.h
+    API/JSRetainPtr.h
+    API/JSWeakObjectMapRefInternal.h
+    API/JSWeakObjectMapRefPrivate.h
+    API/JSRetainPtr.h
+    API/OpaqueJSString.h
+    API/WebKitAvailability.h
+)
 
 
 # GENERATOR 1-B: particular LUT creator (for 1 file only)
@@ -423,6 +477,8 @@ ENDIF ()
 
 
 WEBKIT_INCLUDE_CONFIG_FILES_IF_EXISTS()
+
+WEBKIT_CREATE_FORWARDING_HEADERS(JavaScriptCore DIRECTORIES ${JavaScriptCore_FORWARDING_HEADERS_DIRECTORIES} FILES ${JavaScriptCore_FORWARDING_HEADERS_FILES})
 
 
 ADD_SUBDIRECTORY(shell)

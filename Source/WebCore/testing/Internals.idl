@@ -59,6 +59,10 @@
     boolean isValidContentSelect(in Element contentElement) raises(DOMException);
     Node treeScopeRootNode(in Node node) raises (DOMException);
     Node parentTreeScope(in Node node) raises (DOMException);
+    boolean hasSelectorForIdInShadow(in Element host, in DOMString id) raises (DOMException);
+    boolean hasSelectorForClassInShadow(in Element host, in DOMString className) raises (DOMException);
+    boolean hasSelectorForAttributeInShadow(in Element host, in DOMString attributeName) raises (DOMException);
+    boolean hasSelectorForPseudoClassInShadow(in Element host, in DOMString pseudoClass) raises (DOMException);
 
     Node nextSiblingByWalker(in Node node) raises(DOMException);
     Node firstChildByWalker(in Node node) raises(DOMException);
@@ -74,6 +78,7 @@
 #endif
     DOMString[] formControlStateOfPreviousHistoryItem() raises(DOMException);
     void setFormControlStateOfPreviousHistoryItem(in DOMString[] values) raises(DOMException);
+    void setEnableMockPagePopup(in boolean enabled) raises(DOMException);
 #if defined(ENABLE_PAGE_POPUP) && ENABLE_PAGE_POPUP
     readonly attribute PagePopupController pagePopupController;
 #endif
@@ -191,6 +196,7 @@
     DOMString pageProperty(in DOMString propertyName, in long pageNumber) raises (DOMException);
     DOMString pageSizeAndMarginsInPixels(in long pageIndex, in long width, in long height, in long marginTop, in long marginRight, in long marginBottom, in long marginLeft) raises (DOMException);
 
+    void setPageScaleFactor(in float scaleFactor, in long x, in long y) raises(DOMException);
 
 #if defined(ENABLE_FULLSCREEN_API) && ENABLE_FULLSCREEN_API
     void webkitWillEnterFullScreenForElement(in Document document, in Element element);
@@ -210,4 +216,12 @@
     //  startTrackingRepaints, repaintRectsAsText, stopTrackingRepaints.
     void startTrackingRepaints(in Document document) raises (DOMException);
     void stopTrackingRepaints(in Document document) raises (DOMException);
+
+    // Returns a string with information about the mouse cursor used at the specified client location.
+    DOMString getCurrentCursorInfo(in Document document) raises (DOMException);
+
+    SerializedScriptValue deserializeBuffer(in ArrayBuffer buffer);
+    ArrayBuffer serializeObject(in SerializedScriptValue obj);
+
+    void setUsesOverlayScrollbars(in boolean enabled);
 };

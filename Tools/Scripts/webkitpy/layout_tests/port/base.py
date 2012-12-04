@@ -54,6 +54,7 @@ from webkitpy.common.memoized import memoized
 from webkitpy.common.system import path
 from webkitpy.common.system.executive import ScriptError
 from webkitpy.common.system.systemhost import SystemHost
+from webkitpy.common.webkit_finder import WebKitFinder
 from webkitpy.layout_tests.models.test_configuration import TestConfiguration
 from webkitpy.layout_tests.port import config as port_config
 from webkitpy.layout_tests.port import driver
@@ -90,7 +91,7 @@ class Port(object):
         # Subclasses will usually override this.
         return cls.port_name
 
-    def __init__(self, host, port_name=None, options=None, config=None, **kwargs):
+    def __init__(self, host, port_name=None, options=None, **kwargs):
 
         # This value may be different from cls.port_name by having version modifiers
         # and other fields appended to it (for example, 'qt-arm' or 'mac-wk2').
@@ -110,7 +111,8 @@ class Port(object):
         self.host = host
         self._executive = host.executive
         self._filesystem = host.filesystem
-        self._config = config or port_config.Config(self._executive, self._filesystem, self.port_name)
+        self._webkit_finder = WebKitFinder(host.filesystem)
+        self._config = port_config.Config(self._executive, self._filesystem, self.port_name)
 
         self._helper = None
         self._http_server = None
@@ -571,12 +573,14 @@ class Port(object):
                         reftest_list.append((expectation, path))
             return reftest_list
 
-        return reftest_list.get(self._filesystem.join(self.layout_tests_dir(), test_name), [])
+        return reftest_list.get(self._filesystem.join(self.layout_tests_dir(), test_name), [])  # pylint: disable-msg=E1103
 
     def tests(self, paths):
         """Return the list of tests found. Both generic and platform-specific tests matching paths should be returned."""
         expanded_paths = self._expanded_paths(paths)
-        return self._real_tests(expanded_paths).union(self._virtual_tests(expanded_paths, self.populated_virtual_test_suites()))
+        tests = self._real_tests(expanded_paths)
+        tests.extend(self._virtual_tests(expanded_paths, self.populated_virtual_test_suites()))
+        return tests
 
     def _expanded_paths(self, paths):
         expanded_paths = []
@@ -594,8 +598,8 @@ class Port(object):
     def _real_tests(self, paths):
         # When collecting test cases, skip these directories
         skipped_directories = set(['.svn', '_svn', 'resources', 'script-tests', 'reference', 'reftest'])
-        files = find_files.find(self._filesystem, self.layout_tests_dir(), paths, skipped_directories, Port._is_test_file)
-        return set([self.relative_test_filename(f) for f in files])
+        files = find_files.find(self._filesystem, self.layout_tests_dir(), paths, skipped_directories, Port._is_test_file, self.test_key)
+        return [self.relative_test_filename(f) for f in files]
 
     # When collecting test cases, we include any file with these extensions.
     _supported_file_extensions = set(['.html', '.shtml', '.xml', '.xhtml', '.pl',
@@ -620,6 +624,31 @@ class Port(object):
     @staticmethod
     def _is_test_file(filesystem, dirname, filename):
         return Port._has_supported_extension(filesystem, filename) and not Port.is_reference_html_file(filesystem, dirname, filename)
+
+    def test_key(self, test_name):
+        """Turns a test name into a list with two sublists, the natural key of the
+        dirname, and the natural key of the basename.
+
+        This can be used when sorting paths so that files in a directory.
+        directory are kept together rather than being mixed in with files in
+        subdirectories."""
+        dirname, basename = self.split_test(test_name)
+        return (self._natural_sort_key(dirname + self.TEST_PATH_SEPARATOR), self._natural_sort_key(basename))
+
+    def _natural_sort_key(self, string_to_split):
+        """ Turns a string into a list of string and number chunks, i.e. "z23a" -> ["z", 23, "a"]
+
+        This can be used to implement "natural sort" order. See:
+        http://www.codinghorror.com/blog/2007/12/sorting-for-humans-natural-sort-order.html
+        http://nedbatchelder.com/blog/200712.html#e20071211T054956
+        """
+        def tryint(val):
+            try:
+                return int(val)
+            except ValueError:
+                return val
+
+        return [tryint(chunk) for chunk in re.split('(\d+)', string_to_split)]
 
     def test_dirs(self):
         """Returns the list of top-level test directories."""
@@ -683,17 +712,21 @@ class Port(object):
         """
         self._filesystem.write_binary_file(baseline_path, data)
 
-    @memoized
+    # FIXME: update callers to create a finder and call it instead of these next five routines (which should be protected).
+    def webkit_base(self):
+        return self._webkit_finder.webkit_base()
+
+    def path_from_webkit_base(self, *comps):
+        return self._webkit_finder.path_from_webkit_base(*comps)
+
+    def path_to_script(self, script_name):
+        return self._webkit_finder.path_to_script(script_name)
+
     def layout_tests_dir(self):
-        """Return the absolute path to the top of the LayoutTests directory."""
-        return self._filesystem.normpath(self.path_from_webkit_base('LayoutTests'))
+        return self._webkit_finder.layout_tests_dir()
 
     def perf_tests_dir(self):
-        """Return the absolute path to the top of the PerformanceTests directory."""
-        return self.path_from_webkit_base('PerformanceTests')
-
-    def webkit_base(self):
-        return self._filesystem.abspath(self.path_from_webkit_base('.'))
+        return self._webkit_finder.perf_tests_dir()
 
     def skipped_layout_tests(self, test_list):
         """Returns tests skipped outside of the TestExpectations files."""
@@ -763,11 +796,6 @@ class Port(object):
 
     def set_option_default(self, name, default_value):
         return self._options.ensure_value(name, default_value)
-
-    def path_from_webkit_base(self, *comps):
-        """Returns the full path to path made by joining the top of the
-        WebKit source tree and the list of path components in |*comps|."""
-        return self._config.path_from_webkit_base(*comps)
 
     @memoized
     def path_to_test_expectations_file(self):
@@ -1320,14 +1348,14 @@ class Port(object):
         return suites
 
     def _virtual_tests(self, paths, suites):
-        virtual_tests = set()
+        virtual_tests = list()
         for suite in suites:
             if paths:
                 for test in suite.tests:
                     if any(test.startswith(p) for p in paths):
-                        virtual_tests.add(test)
+                        virtual_tests.append(test)
             else:
-                virtual_tests.update(set(suite.tests.keys()))
+                virtual_tests.extend(suite.tests.keys())
         return virtual_tests
 
     def lookup_virtual_test_base(self, test_name):
@@ -1373,12 +1401,12 @@ class Port(object):
         return config_args
 
     def _run_script(self, script_name, args=None, include_configuration_arguments=True, decode_output=True, env=None):
-        run_script_command = [self._config.script_path(script_name)]
+        run_script_command = [self.path_to_script(script_name)]
         if include_configuration_arguments:
             run_script_command.extend(self._arguments_for_configuration())
         if args:
             run_script_command.extend(args)
-        output = self._executive.run_command(run_script_command, cwd=self._config.webkit_base_dir(), decode_output=decode_output, env=env)
+        output = self._executive.run_command(run_script_command, cwd=self.webkit_base(), decode_output=decode_output, env=env)
         _log.debug('Output of %s:\n%s' % (run_script_command, output))
         return output
 

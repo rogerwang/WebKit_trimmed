@@ -33,7 +33,7 @@
 #import "GraphicsLayerCA.h"
 #import "PlatformCALayer.h"
 #import "ThemeMac.h"
-#import <objc/objc-runtime.h>
+#import <objc/runtime.h>
 #import <QuartzCore/QuartzCore.h>
 #import <wtf/UnusedParam.h>
 #import "WebCoreSystemInterface.h"
@@ -85,17 +85,36 @@ void drawLayerContents(CGContextRef context, CALayer *layer, WebCore::PlatformCA
     ThemeMac::setFocusRingClipRect(transform.mapRect(clipBounds));
 
 #if PLATFORM(IOS) || __MAC_OS_X_VERSION_MIN_REQUIRED >= 1070
-    __block GraphicsContext* ctx = &graphicsContext;
+    const float wastedSpaceThreshold = 0.75f;
+    const unsigned maxRectsToPaint = 5;
 
-    wkCALayerEnumerateRectsBeingDrawnWithBlock(layer, context, ^(CGRect rect){
-        FloatRect rectBeingDrawn(rect);
-        rectBeingDrawn.intersect(clipBounds);
-        
-        GraphicsContextStateSaver stateSaver(*ctx);
-        ctx->clip(rectBeingDrawn);
-        
-        layerContents->platformCALayerPaintContents(*ctx, enclosingIntRect(rectBeingDrawn));
+    double clipArea = clipBounds.width() * clipBounds.height();
+    __block double totalRectArea = 0;
+    __block unsigned rectCount = 0;
+    __block Vector<FloatRect, maxRectsToPaint> dirtyRects;
+    
+    wkCALayerEnumerateRectsBeingDrawnWithBlock(layer, context, ^(CGRect rect) {
+        if (++rectCount > maxRectsToPaint)
+            return;
+
+        totalRectArea += rect.size.width * rect.size.height;
+        dirtyRects.append(rect);
     });
+
+    if (rectCount < maxRectsToPaint && totalRectArea < clipArea * wastedSpaceThreshold) {
+        for (unsigned i = 0; i < rectCount; ++i) {
+            const FloatRect& currentRect = dirtyRects[i];
+            
+            GraphicsContextStateSaver stateSaver(graphicsContext);
+            graphicsContext.clip(currentRect);
+            
+            layerContents->platformCALayerPaintContents(graphicsContext, enclosingIntRect(currentRect));
+        }
+    } else {
+        // CGContextGetClipBoundingBox() gives us the bounds of the dirty region, so clipBounds
+        // encompasses all the dirty rects.
+        layerContents->platformCALayerPaintContents(graphicsContext, enclosingIntRect(clipBounds));
+    }
 
 #else
     IntRect clip(enclosingIntRect(clipBounds));
@@ -135,12 +154,15 @@ void drawLayerContents(CGContextRef context, CALayer *layer, WebCore::PlatformCA
         else
             CGContextSetRGBFillColor(context, 1, 1, 1, 1);
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
         CGContextSetTextMatrix(context, CGAffineTransformMakeScale(1, -1));
         CGContextSelectFont(context, "Helvetica", 22, kCGEncodingMacRoman);
         CGContextShowTextAtPoint(context, indicatorBox.origin.x + 5, indicatorBox.origin.y + 22, text, strlen(text));
-        
+#pragma clang diagnostic pop
+
         CGContextEndTransparencyLayer(context);
-        CGContextRestoreGState(context);        
+        CGContextRestoreGState(context);
     }
 
     CGContextRestoreGState(context);

@@ -1198,17 +1198,17 @@ WebInspector.DOMAgent.prototype = {
     /**
      * @param {?number} nodeId
      * @param {string=} mode
+     * @param {RuntimeAgent.RemoteObjectId=} objectId
      */
-    highlightDOMNode: function(nodeId, mode)
+    highlightDOMNode: function(nodeId, mode, objectId)
     {
         if (this._hideDOMNodeHighlightTimeout) {
             clearTimeout(this._hideDOMNodeHighlightTimeout);
             delete this._hideDOMNodeHighlightTimeout;
         }
 
-        this._highlightedDOMNodeId = nodeId;
-        if (nodeId)
-            DOMAgent.highlightNode(nodeId, this._buildHighlightConfig(mode));
+        if (objectId || nodeId)
+            DOMAgent.highlightNode(objectId ? undefined : nodeId, objectId, this._buildHighlightConfig(mode));
         else
             DOMAgent.hideHighlight();
     },
@@ -1280,11 +1280,12 @@ WebInspector.DOMAgent.prototype = {
     {
         const injectedFunction = function() {
             const touchEvents = ["ontouchstart", "ontouchend", "ontouchmove", "ontouchcancel"];
+            var recepients = [window.__proto__, document.__proto__];
             for (var i = 0; i < touchEvents.length; ++i) {
-                if (!(touchEvents[i] in window.__proto__))
-                    Object.defineProperty(window.__proto__, touchEvents[i], { value: null, writable: true, configurable: true, enumerable: true });
-                if (!(touchEvents[i] in document.__proto__))
-                    Object.defineProperty(document.__proto__, touchEvents[i], { value: null, writable: true, configurable: true, enumerable: true });
+                for (var j = 0; j < recepients.length; ++j) {
+                    if (!(touchEvents[i] in recepients[j]))
+                        Object.defineProperty(recepients[j], touchEvents[i], { value: null, writable: true, configurable: true, enumerable: true });
+                }
             }
         }
 

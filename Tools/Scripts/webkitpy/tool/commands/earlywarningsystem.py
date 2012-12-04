@@ -26,11 +26,11 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import logging
 from optparse import make_option
 
 from webkitpy.common.config.committers import CommitterList
 from webkitpy.common.config.ports import DeprecatedPort
-from webkitpy.common.system.deprecated_logging import error, log
 from webkitpy.common.system.executive import ScriptError
 from webkitpy.tool.bot.earlywarningsystemtask import EarlyWarningSystemTask, EarlyWarningSystemTaskDelegate
 from webkitpy.tool.bot.expectedfailures import ExpectedFailures
@@ -39,11 +39,16 @@ from webkitpy.tool.bot.patchanalysistask import UnableToApplyPatch
 from webkitpy.tool.bot.queueengine import QueueEngine
 from webkitpy.tool.commands.queues import AbstractReviewQueue
 
+_log = logging.getLogger(__name__)
+
 
 class AbstractEarlyWarningSystem(AbstractReviewQueue, EarlyWarningSystemTaskDelegate):
     _build_style = "release"
     # FIXME: Switch _default_run_tests from opt-in to opt-out once more bots are ready to run tests.
     _default_run_tests = False
+
+    # Subclasses must override.
+    port_name = None
 
     def __init__(self):
         options = [make_option("--run-tests", action="store_true", dest="run_tests", default=self._default_run_tests, help="Run the Layout tests for each patch")]
@@ -132,14 +137,13 @@ class AbstractEarlyWarningSystem(AbstractReviewQueue, EarlyWarningSystemTaskDele
     @classmethod
     def handle_script_error(cls, tool, state, script_error):
         # FIXME: Why does this not exit(1) like the superclass does?
-        log(script_error.message_with_output())
+        _log.error(script_error.message_with_output())
 
 
 class GtkEWS(AbstractEarlyWarningSystem):
     name = "gtk-ews"
     port_name = "gtk"
     watchers = AbstractEarlyWarningSystem.watchers + [
-        "gns@gnome.org",
         "xan.lopez@gmail.com",
     ]
 

@@ -34,6 +34,7 @@
 #include "CredentialTransformData.h"
 #include "DumpRenderTreeClient.h"
 #include "ExternalExtension.h"
+#include "FrameLoadRequest.h"
 #include "FrameNetworkingContextBlackBerry.h"
 #include "FrameView.h"
 #include "HTMLFormElement.h"
@@ -74,7 +75,6 @@
 
 #include <BlackBerryPlatformExecutableMessage.h>
 #include <BlackBerryPlatformLog.h>
-#include <BlackBerryPlatformMediaDocument.h>
 #include <BlackBerryPlatformMessageClient.h>
 #include <BlackBerryPlatformScreen.h>
 #include <JavaScriptCore/APICast.h>
@@ -404,8 +404,7 @@ PassRefPtr<DocumentLoader> FrameLoaderClientBlackBerry::createDocumentLoader(con
             // The first 6 letters is "about:"
             String aboutWhat = request.url().string().substring(6);
             source = aboutData(aboutWhat);
-        } else if (request.url().protocolIs("rtsp"))
-            source = BlackBerry::Platform::mediaDocument(request.url().string());
+        }
 
         if (!source.isEmpty()) {
             // Always ignore existing substitute data if any.
@@ -435,8 +434,11 @@ void FrameLoaderClientBlackBerry::transitionToCommittedForNewPage()
     // in the backing store from another thread (see BackingStorePrivate::blitVisibleContents method),
     // so we suspend and resume screen update to make sure we do not get a invalid FrameView
     // state.
-    if (isMainFrame() && m_webPagePrivate->backingStoreClient())
-        m_webPagePrivate->backingStoreClient()->backingStore()->d->suspendScreenAndBackingStoreUpdates();
+    if (isMainFrame() && m_webPagePrivate->backingStoreClient()) {
+        // FIXME: Do we really need to suspend/resume both backingstore and screen here?
+        m_webPagePrivate->backingStoreClient()->backingStore()->d->suspendBackingStoreUpdates();
+        m_webPagePrivate->backingStoreClient()->backingStore()->d->suspendScreenUpdates();
+    }
 
     // We are navigating away from this document, so clean up any footprint we might have.
     if (m_frame->document())
@@ -456,8 +458,11 @@ void FrameLoaderClientBlackBerry::transitionToCommittedForNewPage()
                         ScrollbarAlwaysOff,                    /* ver mode */
                         true);                                 /* lock the mode */
 
-    if (isMainFrame() && m_webPagePrivate->backingStoreClient())
-        m_webPagePrivate->backingStoreClient()->backingStore()->d->resumeScreenAndBackingStoreUpdates(BackingStore::None);
+    if (isMainFrame() && m_webPagePrivate->backingStoreClient()) {
+        // FIXME: Do we really need to suspend/resume both backingstore and screen here?
+        m_webPagePrivate->backingStoreClient()->backingStore()->d->resumeBackingStoreUpdates();
+        m_webPagePrivate->backingStoreClient()->backingStore()->d->resumeScreenUpdates(BackingStore::None);
+    }
 
     m_frame->view()->updateCanHaveScrollbars();
 
@@ -746,7 +751,7 @@ void FrameLoaderClientBlackBerry::dispatchDidFailProvisionalLoad(const ResourceE
     }
 
     m_loadingErrorPage = true;
-    m_frame->loader()->load(originalRequest, errorData, false);
+    m_frame->loader()->load(FrameLoadRequest(m_frame, originalRequest, errorData));
 }
 
 void FrameLoaderClientBlackBerry::dispatchWillSubmitForm(FramePolicyFunction function, PassRefPtr<FormState>)
@@ -762,7 +767,7 @@ void FrameLoaderClientBlackBerry::dispatchWillSendSubmitEvent(PassRefPtr<FormSta
             m_webPagePrivate->m_autofillManager->saveTextFields(prpFormState->form());
 #if ENABLE(BLACKBERRY_CREDENTIAL_PERSIST)
         if (m_webPagePrivate->m_webSettings->isCredentialAutofillEnabled())
-            credentialManager().saveCredentialIfConfirmed(m_webPagePrivate, CredentialTransformData(prpFormState->form()));
+            credentialManager().saveCredentialIfConfirmed(m_webPagePrivate, CredentialTransformData(prpFormState->form(), true));
 #endif
     }
 }
@@ -1122,7 +1127,9 @@ void FrameLoaderClientBlackBerry::restoreViewState()
 
     // Don't flash checkerboard before WebPagePrivate::restoreHistoryViewState() finished.
     // This call will be balanced by BackingStorePrivate::resumeScreenAndBackingStoreUpdates() in WebPagePrivate::restoreHistoryViewState().
-    m_webPagePrivate->m_backingStore->d->suspendScreenAndBackingStoreUpdates();
+    // FIXME: Do we really need to suspend/resume both backingstore and screen here?
+    m_webPagePrivate->m_backingStore->d->suspendBackingStoreUpdates();
+    m_webPagePrivate->m_backingStore->d->suspendScreenUpdates();
 
     // It is not safe to render the page at this point. So we post a message instead. Messages have higher priority than timers.
     BlackBerry::Platform::webKitThreadMessageClient()->dispatchMessage(BlackBerry::Platform::createMethodCallMessage(

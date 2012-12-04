@@ -2242,6 +2242,30 @@ public:
         return 0;
     }
 
+    static bool canJumpReplacePatchableBranchPtrWithPatch() { return false; }
+
+    static CodeLocationLabel startOfBranchPtrWithPatchOnRegister(CodeLocationDataLabelPtr label)
+    {
+        return label.labelAtOffset(0);
+    }
+
+    static void revertJumpReplacementToBranchPtrWithPatch(CodeLocationLabel instructionStart, RegisterID, void* initialValue)
+    {
+        MIPSAssembler::revertJumpToMove(instructionStart.dataLocation(), immTempRegister, reinterpret_cast<int>(initialValue) & 0xffff);
+    }
+
+    static CodeLocationLabel startOfPatchableBranchPtrWithPatchOnAddress(CodeLocationDataLabelPtr)
+    {
+        UNREACHABLE_FOR_PLATFORM();
+        return CodeLocationLabel();
+    }
+
+    static void revertJumpReplacementToPatchableBranchPtrWithPatch(CodeLocationLabel instructionStart, Address, void* initialValue)
+    {
+        UNREACHABLE_FOR_PLATFORM();
+    }
+
+
 private:
     // If m_fixedWidth is true, we will generate a fixed number of instructions.
     // Otherwise, we can emit any number of instructions.

@@ -35,7 +35,6 @@
 #include "CSSValueKeywords.h"
 #include "Document.h"
 #include "DocumentFragment.h"
-#include "EditingText.h"
 #include "Element.h"
 #include "EventNames.h"
 #include "Frame.h"
@@ -52,6 +51,7 @@
 #include "SimplifyMarkupCommand.h"
 #include "SmartReplace.h"
 #include "StylePropertySet.h"
+#include "Text.h"
 #include "TextIterator.h"
 #include "htmlediting.h"
 #include "markup.h"
@@ -657,7 +657,7 @@ void ReplaceSelectionCommand::handleStyleSpans(InsertedNodes& insertedNodes)
     if (!wrappingStyleSpan)
         return;
 
-    RefPtr<EditingStyle> style = EditingStyle::create(wrappingStyleSpan->ensureInlineStyle());
+    RefPtr<EditingStyle> style = EditingStyle::create(wrappingStyleSpan->ensureMutableInlineStyle());
     ContainerNode* context = wrappingStyleSpan->parentNode();
 
     // If Mail wraps the fragment with a Paste as Quotation blockquote, or if you're pasting into a quoted region,

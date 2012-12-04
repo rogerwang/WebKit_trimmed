@@ -257,8 +257,8 @@
     [V8EnabledAtRuntime] void webkitExitFullscreen();
 #endif
 
-    [Conditional=POINTER_LOCK, V8EnabledAtRuntime=pointerLock] void webkitExitPointerLock();
-    [Conditional=POINTER_LOCK, V8EnabledAtRuntime=pointerLock] readonly attribute Element webkitPointerLockElement;
+    [Conditional=POINTER_LOCK] void webkitExitPointerLock();
+    [Conditional=POINTER_LOCK] readonly attribute Element webkitPointerLockElement;
 
     [Conditional=CSS_REGIONS] DOMNamedFlowCollection webkitGetNamedFlows();
 
@@ -335,8 +335,8 @@
     [NotEnumerable,Conditional=TOUCH_EVENTS,V8EnabledAtRuntime] attribute EventListener ontouchcancel;
     [NotEnumerable, Conditional=FULLSCREEN_API] attribute EventListener onwebkitfullscreenchange;
     [NotEnumerable, Conditional=FULLSCREEN_API] attribute EventListener onwebkitfullscreenerror;
-    [NotEnumerable, Conditional=POINTER_LOCK, V8EnabledAtRuntime=pointerLock] attribute EventListener onwebkitpointerlockchange;
-    [NotEnumerable, Conditional=POINTER_LOCK, V8EnabledAtRuntime=pointerLock] attribute EventListener onwebkitpointerlockerror;
+    [NotEnumerable, Conditional=POINTER_LOCK] attribute EventListener onwebkitpointerlockchange;
+    [NotEnumerable, Conditional=POINTER_LOCK] attribute EventListener onwebkitpointerlockerror;
 #endif
 
 #if defined(ENABLE_TOUCH_EVENTS) && ENABLE_TOUCH_EVENTS
@@ -366,7 +366,7 @@
     [Conditional=PAGE_VISIBILITY_API] readonly attribute boolean webkitHidden;
 
     // Security Policy API: http://dvcs.w3.org/hg/content-security-policy/raw-file/tip/csp-specification.dev.html#script-interfaces
-    [Conditional=CSP_NEXT] readonly attribute DOMSecurityPolicy securityPolicy;
+    [Conditional=CSP_NEXT, V8EnabledAtRuntime=experimentalContentSecurityPolicyFeatures] readonly attribute DOMSecurityPolicy securityPolicy;
 
 };
 

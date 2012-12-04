@@ -96,6 +96,18 @@ MACRO (GENERATE_EXCEPTION_CODE_DESCRIPTION _infile _outfile)
 ENDMACRO ()
 
 
+MACRO (GENERATE_SETTINGS_MACROS _infile _outfile)
+    SET(NAMES_GENERATOR ${WEBCORE_DIR}/page/make_settings.pl)
+
+    ADD_CUSTOM_COMMAND(
+        OUTPUT  ${DERIVED_SOURCES_WEBCORE_DIR}/${_outfile}
+        MAIN_DEPENDENCY ${_infile}
+        DEPENDS ${NAMES_GENERATOR} ${SCRIPTS_BINDINGS}
+        COMMAND ${PERL_EXECUTABLE} -I${WEBCORE_DIR}/bindings/scripts ${NAMES_GENERATOR} --input ${_infile} --outputDir ${DERIVED_SOURCES_WEBCORE_DIR}
+        VERBATIM)
+ENDMACRO ()
+
+
 MACRO (GENERATE_DOM_NAMES _namespace _attrs)
     SET(NAMES_GENERATOR ${WEBCORE_DIR}/dom/make_names.pl)
     SET(_arguments  --attrs ${_attrs})
@@ -149,11 +161,16 @@ ENDMACRO ()
 
 
 MACRO (GENERATE_GRAMMAR _prefix _input _output_header _output_source _features)
+    # This is a workaround for winflexbison, which does not work corretly when
+    # run in a different working directory than the installation directory.
+    GET_FILENAME_COMPONENT(_working_directory ${BISON_EXECUTABLE} PATH)
+
     ADD_CUSTOM_COMMAND(
         OUTPUT ${_output_header} ${_output_source}
         MAIN_DEPENDENCY ${_input}
         DEPENDS ${_input}
         COMMAND ${PERL_EXECUTABLE} -I ${WEBCORE_DIR}/bindings/scripts ${WEBCORE_DIR}/css/makegrammar.pl --outputDir ${DERIVED_SOURCES_WEBCORE_DIR} --extraDefines "${_features}" --preprocessor "${CODE_GENERATOR_PREPROCESSOR}" --bison "${BISON_EXECUTABLE}" --symbolsPrefix ${_prefix} ${_input}
+        WORKING_DIRECTORY ${_working_directory}
         VERBATIM)
 ENDMACRO ()
 

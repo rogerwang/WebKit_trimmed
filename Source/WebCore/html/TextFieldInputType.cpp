@@ -41,6 +41,7 @@
 #include "HTMLInputElement.h"
 #include "HTMLNames.h"
 #include "KeyboardEvent.h"
+#include "NodeRenderStyle.h"
 #include "Page.h"
 #include "RenderLayer.h"
 #include "RenderTextControlSingleLine.h"
@@ -192,8 +193,7 @@ void TextFieldInputType::forwardEvent(Event* event)
 void TextFieldInputType::handleBlurEvent()
 {
     InputType::handleBlurEvent();
-    if (Frame* frame = element()->document()->frame())
-        frame->editor()->textFieldDidEndEditing(element());
+    element()->endEditing();
 }
 
 bool TextFieldInputType::shouldSubmitImplicitly(Event* event)
@@ -329,6 +329,11 @@ void TextFieldInputType::readonlyAttributeChanged()
         m_innerSpinButton->releaseCapture();
 }
 
+bool TextFieldInputType::supportsReadOnly() const
+{
+    return true;
+}
+
 bool TextFieldInputType::shouldUseInputMethod() const
 {
     return true;
@@ -425,6 +430,9 @@ void TextFieldInputType::updatePlaceholderText()
 void TextFieldInputType::attach()
 {
     InputType::attach();
+    // If container exists, the container should not have any content data.
+    ASSERT(!m_container || !m_container->renderStyle() || !m_container->renderStyle()->hasContent());
+
     element()->fixPlaceholderRenderer(m_placeholder.get(), m_container ? m_container.get() : m_innerText.get());
 }
 
@@ -435,6 +443,41 @@ bool TextFieldInputType::appendFormData(FormDataList& list, bool multipart) cons
     if (!dirnameAttrValue.isNull())
         list.appendData(dirnameAttrValue, element()->directionForFormData());
     return true;
+}
+
+String TextFieldInputType::convertFromVisibleValue(const String& visibleValue) const
+{
+    return visibleValue;
+}
+
+void TextFieldInputType::subtreeHasChanged()
+{
+    ASSERT(element()->renderer());
+
+    bool wasChanged = element()->wasChangedSinceLastFormControlChangeEvent();
+    element()->setChangedSinceLastFormControlChangeEvent(true);
+
+    // We don't need to call sanitizeUserInputValue() function here because
+    // HTMLInputElement::handleBeforeTextInsertedEvent() has already called
+    // sanitizeUserInputValue().
+    // sanitizeValue() is needed because IME input doesn't dispatch BeforeTextInsertedEvent.
+    element()->setValueFromRenderer(sanitizeValue(convertFromVisibleValue(element()->innerTextValue())));
+    element()->updatePlaceholderVisibility(false);
+    // Recalc for :invalid change.
+    element()->setNeedsStyleRecalc();
+
+    didSetValueByUserEdit(wasChanged ? ValueChangeStateChanged : ValueChangeStateNone);
+}
+
+void TextFieldInputType::didSetValueByUserEdit(ValueChangeState state)
+{
+    if (!element()->focused())
+        return;
+    if (Frame* frame = element()->document()->frame()) {
+        if (state == ValueChangeStateNone)
+            frame->editor()->textFieldDidBeginEditing(element());
+        frame->editor()->textDidChangeInTextField(element());
+    }
 }
 
 void TextFieldInputType::spinButtonStepDown()

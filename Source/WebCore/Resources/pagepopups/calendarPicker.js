@@ -149,34 +149,9 @@ function formatJapaneseImperialEra(year, month) {
 Month.prototype.toLocaleString = function() {
     if (isNaN(this.year) || isNaN(this.year))
         return "Invalid Month";
-    var yearString = localizeNumber(this.year);
-    var monthString = global.params.monthLabels[this.month];
-    switch (getLanguage()) {
-    case "eu":
-    case "fil":
-    case "lt":
-    case "ml":
-    case "mt":
-    case "tl":
-    case "ur":
-        return yearString + " " + monthString;
-    case "hu":
-        return yearString + ". " + monthString;
-    case "ja":
-        return yearString + "年" + formatJapaneseImperialEra(this.year, this.month) + " " + monthString;
-    case "zh":
-        return yearString + "年" + monthString;
-    case "ko":
-        return yearString + "년 " + monthString;
-    case "lv":
-        return yearString + ". g. " + monthString;
-    case "pt":
-        return monthString + " de " + yearString;
-    case "sr":
-        return monthString + ". " + yearString;
-    default:
-        return monthString + " " + yearString;
-    }
+    if (getLanguage() == "ja")
+        return "" + this.year + "年" + formatJapaneseImperialEra(this.year, this.month) + " " + (this.month + 1) + "月";
+    return window.pagePopupController.formatMonth(this.year, this.month);
 };
 
 function createUTCDate(year, month, date) {
@@ -220,7 +195,7 @@ function Day(valueOrDayOrYear, month, date) {
     this.date = dateObject.getUTCDate();
 };
 
-Day.ISOStringRegExp = /^(\d+)-(\d+)-(\d+)$/;
+Day.ISOStringRegExp = /^(\d+)-(\d+)-(\d+)/;
 
 /**
  * @param {!string} str
@@ -605,8 +580,6 @@ function handleArgumentsTimeout() {
     if (global.argumentsReceived)
         return;
     var args = {
-        monthLabels : ["m1", "m2", "m3", "m4", "m5", "m6",
-                       "m7", "m8", "m9", "m10", "m11", "m12"],
         dayLabels : ["d1", "d2", "d3", "d4", "d5", "d6", "d7"],
         todayLabel : "Today",
         clearLabel : "Clear",
@@ -624,10 +597,6 @@ function handleArgumentsTimeout() {
  * @return {?string} An error message, or null if the argument has no errors.
  */
 CalendarPicker.validateConfig = function(config) {
-    if (!config.monthLabels)
-        return "No monthLabels.";
-    if (config.monthLabels.length != 12)
-        return "monthLabels is not an array with 12 elements.";
     if (!config.dayLabels)
         return "No dayLabels.";
     if (config.dayLabels.length != 7)
@@ -702,6 +671,7 @@ function CalendarPicker(element, config) {
     }
     this._element.classList.add("calendar-picker");
     this._element.classList.add("preparing");
+    this.isPreparing = true;
     this._handleWindowResizeBound = this._handleWindowResize.bind(this);
     window.addEventListener("resize", this._handleWindowResizeBound, false);
     // We assume this._config.min/max are valid dates or months.
@@ -740,6 +710,7 @@ CalendarPicker.NavigationBehaviour = {
 
 CalendarPicker.prototype._handleWindowResize = function() {
     this._element.classList.remove("preparing");
+    this.isPreparing = false;
 };
 
 CalendarPicker.prototype.cleanup = function() {
@@ -771,20 +742,24 @@ CalendarPicker.prototype.fixWindowSize = function() {
     var daysAreaElement = this._element.getElementsByClassName(ClassNames.DaysArea)[0];
     var headers = daysAreaElement.getElementsByClassName(ClassNames.DayLabel);
     var maxCellWidth = 0;
-    for (var i = 0; i < headers.length; ++i) {
+    for (var i = 1; i < headers.length; ++i) {
         if (maxCellWidth < headers[i].offsetWidth)
             maxCellWidth = headers[i].offsetWidth;
     }
+    var weekColumnWidth = headers[0].offsetWidth;
+    if (maxCellWidth > weekColumnWidth)
+        weekColumnWidth = maxCellWidth;
+    headers[0].style.width = weekColumnWidth + "px";
     var DaysAreaContainerBorder = 1;
     var yearMonthEnd;
     var daysAreaEnd;
     if (global.params.isCalendarRTL) {
         var startOffset = this._element.offsetLeft + this._element.offsetWidth;
         yearMonthEnd = startOffset - yearMonthRightElement.offsetLeft;
-        daysAreaEnd = startOffset - (daysAreaElement.offsetLeft + daysAreaElement.offsetWidth) + maxCellWidth * 7 + DaysAreaContainerBorder;
+        daysAreaEnd = startOffset - (daysAreaElement.offsetLeft + daysAreaElement.offsetWidth) + weekColumnWidth + maxCellWidth * 7 + DaysAreaContainerBorder;
     } else {
         yearMonthEnd = yearMonthRightElement.offsetLeft + yearMonthRightElement.offsetWidth;
-        daysAreaEnd = daysAreaElement.offsetLeft + maxCellWidth * 7 + DaysAreaContainerBorder;
+        daysAreaEnd = daysAreaElement.offsetLeft + weekColumnWidth + maxCellWidth * 7 + DaysAreaContainerBorder;
     }
     var maxEnd = Math.max(yearMonthEnd, daysAreaEnd);
     var MainPadding = 6; // FIXME: Fix name.
@@ -1250,7 +1225,8 @@ DaysTable.prototype.attachTo = function(element) {
  * @return {!boolean}
  */
 CalendarPicker.prototype._stepMismatch = function(value) {
-    return (value - this.stepBase) % this.step != 0;
+    var nextAllowedValue = Math.ceil((value - this.stepBase) / this.step) * this.step + this.stepBase;
+    return nextAllowedValue >= value + this.selectionConstructor.DefaultStep
 }
 
 /**
@@ -1341,6 +1317,8 @@ DaysTable.prototype.navigateToMonth = function(month, navigationBehaviour) {
  * @param {!Month} month
  */
 DaysTable.prototype._startMoveInAnimation = function(month) {
+    if (this.picker.isPreparing)
+        return;
     var daysStyle = this._daysContainer.style;
     daysStyle.position = "relative";
     daysStyle.webkitTransition = "left 0.1s ease";
@@ -1379,7 +1357,7 @@ DaysTable.prototype._markRangeAsSelected = function(day) {
 DaysTable.prototype.selectRange = function(day) {
     this._deselect();
     if (this.startDate() > day.startDate() || this.endDate() < day.endDate())
-        this.picker.showMonth(Month.createFromDate(day.startDate()));
+        this.picker.showMonth(Month.createFromDate(day.startDate()), CalendarPicker.NavigationBehaviour.Animate);
     this._markRangeAsSelected(day);
 };
 

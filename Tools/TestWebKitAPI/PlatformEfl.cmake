@@ -1,9 +1,11 @@
 ADD_CUSTOM_TARGET(forwarding-headersEflForTestWebKitAPI
+    COMMAND ${PERL_EXECUTABLE} ${WEBKIT2_DIR}/Scripts/generate-forwarding-headers.pl ${WEBKIT2_DIR} ${DERIVED_SOURCES_WEBKIT2_DIR}/include efl
     COMMAND ${PERL_EXECUTABLE} ${WEBKIT2_DIR}/Scripts/generate-forwarding-headers.pl ${TESTWEBKITAPI_DIR} ${DERIVED_SOURCES_WEBKIT2_DIR}/include efl
 )
 SET(ForwardingHeadersForTestWebKitAPI_NAME forwarding-headersEflForTestWebKitAPI)
 
 ADD_CUSTOM_TARGET(forwarding-headersSoupForTestWebKitAPI
+    COMMAND ${PERL_EXECUTABLE} ${WEBKIT2_DIR}/Scripts/generate-forwarding-headers.pl ${WEBKIT2_DIR} ${DERIVED_SOURCES_WEBKIT2_DIR}/include soup
     COMMAND ${PERL_EXECUTABLE} ${WEBKIT2_DIR}/Scripts/generate-forwarding-headers.pl ${TESTWEBKITAPI_DIR} ${DERIVED_SOURCES_WEBKIT2_DIR}/include soup
 )
 SET(ForwardingNetworkHeadersForTestWebKitAPI_NAME forwarding-headersSoupForTestWebKitAPI)
@@ -42,6 +44,7 @@ SET(webkit2_api_harness_SOURCES
 # Release builds before adding it to test_webkit2_api_BINARIES.
 
 SET(test_webkit2_api_BINARIES
+    AboutBlankLoad
     CookieManager
     DOMWindowExtensionNoCache
     DocumentStartUserScriptAlertCrash
@@ -52,10 +55,12 @@ SET(test_webkit2_api_BINARIES
     FrameMIMETypeHTML
     FrameMIMETypePNG
     GetInjectedBundleInitializationUserDataCallback
+    HitTestResultNodeHandle
     InjectedBundleBasic
     InjectedBundleInitializationUserDataCallbackWins
     LoadAlternateHTMLStringWithNonDirectoryURL
     LoadCanceledNoServerRedirectCallback
+    MouseMoveAfterCrash
     NewFirstVisuallyNonEmptyLayout
     NewFirstVisuallyNonEmptyLayoutFails
     PageLoadBasic
@@ -64,6 +69,7 @@ SET(test_webkit2_api_BINARIES
     PreventEmptyUserAgent
     PrivateBrowsingPushStateNoHistoryCallback
     WKConnection
+    WKPreferences
     WKString
     WKStringJSString
     WKURL
@@ -85,12 +91,8 @@ ADD_DEFINITIONS(-DTHEME_DIR="${THEME_BINARY_DIR}")
 
 # Tests disabled because of missing features on the test harness:
 #
-#   AboutBlankLoad
-#   HitTestResultNodeHandle
-#   MouseMoveAfterCrash
 #   ResponsivenessTimerDoesntFireEarly
 #   SpacebarScrolling
-#   WKPreferences
 #
 # Flaky test, fails on Release but passes on Debug:
 #

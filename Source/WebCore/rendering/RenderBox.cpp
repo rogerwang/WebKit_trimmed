@@ -68,6 +68,10 @@ typedef WTF::HashMap<const RenderBox*, LayoutUnit> OverrideSizeMap;
 static OverrideSizeMap* gOverrideHeightMap = 0;
 static OverrideSizeMap* gOverrideWidthMap = 0;
 
+// Used by grid elements to properly size their grid items.
+static OverrideSizeMap* gOverrideContainingBlockLogicalHeightMap = 0;
+static OverrideSizeMap* gOverrideContainingBlockLogicalWidthMap = 0;
+
 bool RenderBox::s_hadOverflowClip = false;
 
 RenderBox::RenderBox(Node* node)
@@ -133,6 +137,7 @@ void RenderBox::clearRenderBoxRegionInfo()
 void RenderBox::willBeDestroyed()
 {
     clearOverrideSize();
+    clearContainingBlockOverrideSize();
 
     RenderBlock::removePercentHeightDescendantIfNeeded(this);
 
@@ -258,6 +263,7 @@ void RenderBox::styleDidChange(StyleDifference diff, const RenderStyle* oldStyle
         if (viewStyle->writingMode() != newStyle->writingMode() && (isRootRenderer || !document()->writingModeSetOnDocumentElement())) {
             viewStyle->setWritingMode(newStyle->writingMode());
             viewRenderer->setHorizontalWritingMode(newStyle->isHorizontalWritingMode());
+            viewRenderer->markAllDescendantsWithFloatsForLayout();
             if (isBodyRenderer) {
                 document()->documentElement()->renderer()->style()->setWritingMode(newStyle->writingMode());
                 document()->documentElement()->renderer()->setHorizontalWritingMode(newStyle->isHorizontalWritingMode());
@@ -448,16 +454,16 @@ FloatQuad RenderBox::absoluteContentQuad() const
     return localToAbsoluteQuad(FloatRect(rect));
 }
 
-LayoutRect RenderBox::outlineBoundsForRepaint(const RenderLayerModelObject* repaintContainer, LayoutPoint* cachedOffsetToRepaintContainer) const
+LayoutRect RenderBox::outlineBoundsForRepaint(const RenderLayerModelObject* repaintContainer, const RenderGeometryMap* geometryMap) const
 {
     LayoutRect box = borderBoundingBox();
     adjustRectForOutlineAndShadow(box);
 
-    FloatQuad containerRelativeQuad = FloatRect(box);
-    if (cachedOffsetToRepaintContainer)
-        containerRelativeQuad.move(cachedOffsetToRepaintContainer->x(), cachedOffsetToRepaintContainer->y());
+    FloatQuad containerRelativeQuad;
+    if (geometryMap)
+        containerRelativeQuad = geometryMap->mapToContainer(box, repaintContainer);
     else
-        containerRelativeQuad = localToContainerQuad(containerRelativeQuad, repaintContainer);
+        containerRelativeQuad = localToContainerQuad(FloatRect(box), repaintContainer);
 
     box = containerRelativeQuad.enclosingBoundingBox();
 
@@ -617,6 +623,11 @@ bool RenderBox::canBeProgramaticallyScrolled() const
     return (hasOverflowClip() && (scrollsOverflow() || (node() && node()->rendererIsEditable()))) || (node() && node()->isDocumentNode());
 }
 
+bool RenderBox::usesCompositedScrolling() const
+{
+    return hasOverflowClip() && hasLayer() && layer()->usesCompositedScrolling();
+}
+
 void RenderBox::autoscroll()
 {
     if (layer())
@@ -651,6 +662,10 @@ LayoutSize RenderBox::cachedSizeForOverflowClip() const
 void RenderBox::applyCachedClipAndScrollOffsetForRepaint(LayoutRect& paintRect) const
 {
     paintRect.move(-scrolledContentOffset()); // For overflow:auto/scroll/hidden.
+
+    // Do not clip scroll layer contents to reduce the number of repaints while scrolling.
+    if (usesCompositedScrolling())
+        return;
 
     // height() is inaccurate if we're in the middle of a layout of this RenderBox, so use the
     // layer's size instead. Even if the layer's size is wrong, the layer itself will repaint
@@ -727,6 +742,50 @@ LayoutUnit RenderBox::overrideLogicalContentHeight() const
 {
     ASSERT(hasOverrideHeight());
     return gOverrideHeightMap->get(this);
+}
+
+LayoutUnit RenderBox::overrideContainingBlockContentLogicalWidth() const
+{
+    ASSERT(hasOverrideContainingBlockLogicalWidth());
+    return gOverrideContainingBlockLogicalWidthMap->get(this);
+}
+
+LayoutUnit RenderBox::overrideContainingBlockContentLogicalHeight() const
+{
+    ASSERT(hasOverrideContainingBlockLogicalHeight());
+    return gOverrideContainingBlockLogicalHeightMap->get(this);
+}
+
+bool RenderBox::hasOverrideContainingBlockLogicalWidth() const
+{
+    return gOverrideContainingBlockLogicalWidthMap && gOverrideContainingBlockLogicalWidthMap->contains(this);
+}
+
+bool RenderBox::hasOverrideContainingBlockLogicalHeight() const
+{
+    return gOverrideContainingBlockLogicalHeightMap && gOverrideContainingBlockLogicalHeightMap->contains(this);
+}
+
+void RenderBox::setOverrideContainingBlockContentLogicalWidth(LayoutUnit logicalWidth)
+{
+    if (!gOverrideContainingBlockLogicalWidthMap)
+        gOverrideContainingBlockLogicalWidthMap = new OverrideSizeMap;
+    gOverrideContainingBlockLogicalWidthMap->set(this, logicalWidth);
+}
+
+void RenderBox::setOverrideContainingBlockContentLogicalHeight(LayoutUnit logicalHeight)
+{
+    if (!gOverrideContainingBlockLogicalHeightMap)
+        gOverrideContainingBlockLogicalHeightMap = new OverrideSizeMap;
+    gOverrideContainingBlockLogicalHeightMap->set(this, logicalHeight);
+}
+
+void RenderBox::clearContainingBlockOverrideSize()
+{
+    if (gOverrideContainingBlockLogicalWidthMap)
+        gOverrideContainingBlockLogicalWidthMap->remove(this);
+    if (gOverrideContainingBlockLogicalHeightMap)
+        gOverrideContainingBlockLogicalHeightMap->remove(this);
 }
 
 LayoutUnit RenderBox::adjustBorderBoxLogicalWidthForBoxSizing(LayoutUnit width) const
@@ -821,11 +880,8 @@ BackgroundBleedAvoidance RenderBox::determineBackgroundBleedAvoidance(GraphicsCo
     FloatSize contextScaling(static_cast<float>(ctm.xScale()), static_cast<float>(ctm.yScale()));
     if (borderObscuresBackgroundEdge(contextScaling))
         return BackgroundBleedShrinkBackground;
-    
-    // FIXME: there is one more strategy possible, for opaque backgrounds and
-    // translucent borders. In that case we could avoid using a transparency layer,
-    // and paint the border first, and then paint the background clipped to the
-    // inside of the border.
+    if (!style->hasAppearance() && borderObscuresBackground() && backgroundIsSingleOpaqueLayer())
+        return BackgroundBleedBackgroundOverBorder;
 
     return BackgroundBleedUseTransparencyLayer;
 }
@@ -859,12 +915,15 @@ void RenderBox::paintBoxDecorations(PaintInfo& paintInfo, const LayoutPoint& pai
         paintInfo.context->addRoundedRectClip(border);
         paintInfo.context->beginTransparencyLayer(1);
     }
-    
+
     // If we have a native theme appearance, paint that before painting our background.
     // The theme will tell us whether or not we should also paint the CSS background.
     IntRect snappedPaintRect(pixelSnappedIntRect(paintRect));
     bool themePainted = style()->hasAppearance() && !theme()->paint(this, paintInfo, snappedPaintRect);
     if (!themePainted) {
+        if (bleedAvoidance == BackgroundBleedBackgroundOverBorder)
+            paintBorder(paintInfo, paintRect, style(), bleedAvoidance);
+
         paintBackground(paintInfo, paintRect, bleedAvoidance);
 
         if (style()->hasAppearance())
@@ -873,7 +932,7 @@ void RenderBox::paintBoxDecorations(PaintInfo& paintInfo, const LayoutPoint& pai
     paintBoxShadow(paintInfo, paintRect, style(), Inset);
 
     // The theme will tell us whether or not we should also paint the CSS border.
-    if ((!style()->hasAppearance() || (!themePainted && theme()->paintBorderOnly(this, paintInfo, snappedPaintRect))) && style()->hasBorder())
+    if (bleedAvoidance != BackgroundBleedBackgroundOverBorder && (!style()->hasAppearance() || (!themePainted && theme()->paintBorderOnly(this, paintInfo, snappedPaintRect))) && style()->hasBorder())
         paintBorder(paintInfo, paintRect, style(), bleedAvoidance);
 
     if (bleedAvoidance == BackgroundBleedUseTransparencyLayer)
@@ -892,6 +951,25 @@ void RenderBox::paintBackground(const PaintInfo& paintInfo, const LayoutRect& pa
         if (!backgroundIsObscured())
             paintFillLayers(paintInfo, style()->visitedDependentColor(CSSPropertyBackgroundColor), style()->backgroundLayers(), paintRect, bleedAvoidance);
     }
+}
+
+bool RenderBox::backgroundIsSingleOpaqueLayer() const
+{
+    const FillLayer* fillLayer = style()->backgroundLayers();
+    if (!fillLayer || fillLayer->next() || fillLayer->clip() != BorderFillBox || fillLayer->composite() != CompositeSourceOver)
+        return false;
+
+    // Clipped with local scrolling
+    if (hasOverflowClip() && fillLayer->attachment() == LocalBackgroundAttachment)
+        return false;
+
+    Color bgColor = style()->visitedDependentColor(CSSPropertyBackgroundColor);
+    if (bgColor.isValid() && bgColor.alpha() == 255)
+        return true;
+    
+    // FIXME: return true if a background image is present and is opaque
+
+    return false;
 }
 
 void RenderBox::paintMask(PaintInfo& paintInfo, const LayoutPoint& paintOffset)
@@ -970,11 +1048,25 @@ LayoutRect RenderBox::maskClipRect()
 void RenderBox::paintFillLayers(const PaintInfo& paintInfo, const Color& c, const FillLayer* fillLayer, const LayoutRect& rect,
     BackgroundBleedAvoidance bleedAvoidance, CompositeOperator op, RenderObject* backgroundObject)
 {
-    if (!fillLayer)
-        return;
+    Vector<const FillLayer*, 8> layers;
+    const FillLayer* curLayer = fillLayer;
+    while (curLayer) {
+        layers.append(curLayer);
+        // Stop traversal when an opaque layer is encountered.
+        // FIXME : It would be possible for the following occlusion culling test to be more aggressive 
+        // on layers with no repeat by testing whether the image covers the layout rect.
+        // Testing that here would imply duplicating a lot of calculations that are currently done in
+        // RenderBoxModelOBject::paintFillLayerExtended. A more efficient solution might be to move
+        // the layer recursion into paintFillLayerExtended, or to compute the layer geometry here
+        // and pass it down.
+        if (curLayer->hasOpaqueImage(this) && curLayer->clipOccludesNextLayers(curLayer == fillLayer) && curLayer->image()->canRender(this, style()->effectiveZoom()) && curLayer->hasRepeatXY())
+            break;
+        curLayer = curLayer->next();
+    }
 
-    paintFillLayers(paintInfo, c, fillLayer->next(), rect, bleedAvoidance, op, backgroundObject);
-    paintFillLayer(paintInfo, c, fillLayer, rect, bleedAvoidance, op, backgroundObject);
+    Vector<const FillLayer*>::const_reverse_iterator topLayer = layers.rend();
+    for (Vector<const FillLayer*>::const_reverse_iterator it = layers.rbegin(); it != topLayer; ++it)
+        paintFillLayer(paintInfo, c, *it, rect, bleedAvoidance, op, backgroundObject);
 }
 
 void RenderBox::paintFillLayer(const PaintInfo& paintInfo, const Color& c, const FillLayer* fillLayer, const LayoutRect& rect,
@@ -1216,8 +1308,20 @@ LayoutUnit RenderBox::shrinkLogicalWidthToAvoidFloats(LayoutUnit childMarginStar
 
 LayoutUnit RenderBox::containingBlockLogicalWidthForContent() const
 {
+    if (hasOverrideContainingBlockLogicalWidth())
+        return overrideContainingBlockContentLogicalWidth();
+
     RenderBlock* cb = containingBlock();
     return cb->availableLogicalWidth();
+}
+
+LayoutUnit RenderBox::containingBlockLogicalHeightForContent() const
+{
+    if (hasOverrideContainingBlockLogicalHeight())
+        return overrideContainingBlockContentLogicalHeight();
+
+    RenderBlock* cb = containingBlock();
+    return cb->availableLogicalHeight();
 }
 
 LayoutUnit RenderBox::containingBlockLogicalWidthForContentInRegion(RenderRegion* region, LayoutUnit offsetFromLogicalTopOfFirstPage) const
@@ -1227,6 +1331,8 @@ LayoutUnit RenderBox::containingBlockLogicalWidthForContentInRegion(RenderRegion
 
     RenderBlock* cb = containingBlock();
     RenderRegion* containingBlockRegion = cb->clampToStartAndEndRegions(region);
+    // FIXME: It's unclear if a region's content should use the containing block's override logical width.
+    // If it should, the following line should call containingBlockLogicalWidthForContent.
     LayoutUnit result = cb->availableLogicalWidth();
     RenderBoxRegionInfo* boxInfo = cb->renderBoxRegionInfo(containingBlockRegion, offsetFromLogicalTopOfFirstPage - logicalTop());
     if (!boxInfo)
@@ -1250,6 +1356,9 @@ LayoutUnit RenderBox::containingBlockAvailableLineWidthInRegion(RenderRegion* re
 
 LayoutUnit RenderBox::perpendicularContainingBlockLogicalHeight() const
 {
+    if (hasOverrideContainingBlockLogicalHeight())
+        return overrideContainingBlockContentLogicalHeight();
+
     RenderBlock* cb = containingBlock();
     if (cb->hasOverrideHeight())
         return cb->overrideLogicalContentHeight();
@@ -1355,6 +1464,8 @@ const RenderObject* RenderBox::pushMappingToContainer(const RenderLayerModelObje
 
     bool offsetDependsOnPoint = false;
     LayoutSize containerOffset = offsetFromContainer(container, LayoutPoint(), &offsetDependsOnPoint);
+    if (geometryMap.mapCoordinatesFlags() & SnapOffsetForTransforms)
+        containerOffset = roundedIntSize(containerOffset);
 
     if (container->isRenderFlowThread())
         offsetDependsOnPoint = true;
@@ -1566,7 +1677,7 @@ void RenderBox::computeRectForRepaint(const RenderLayerModelObject* repaintConta
 
     // We are now in our parent container's coordinate space.  Apply our transform to obtain a bounding box
     // in the parent's coordinate space that encloses us.
-    if (layer() && layer()->transform()) {
+    if (hasLayer() && layer()->transform()) {
         fixed = position == FixedPosition;
         rect = layer()->transform()->mapRect(pixelSnappedIntRect(rect));
         topLeft = rect.location();
@@ -1584,14 +1695,11 @@ void RenderBox::computeRectForRepaint(const RenderLayerModelObject* repaintConta
         topLeft += layer()->offsetForInFlowPosition();
     }
     
-    if (o->isBlockFlow() && position != AbsolutePosition && position != FixedPosition) {
-        RenderBlock* cb = toRenderBlock(o);
-        if (cb->hasColumns()) {
-            LayoutRect repaintRect(topLeft, rect.size());
-            cb->adjustRectForColumns(repaintRect);
-            topLeft = repaintRect.location();
-            rect = repaintRect;
-        }
+    if (position != AbsolutePosition && position != FixedPosition && o->hasColumns() && o->isBlockFlow()) {
+        LayoutRect repaintRect(topLeft, rect.size());
+        toRenderBlock(o)->adjustRectForColumns(repaintRect);
+        topLeft = repaintRect.location();
+        rect = repaintRect;
     }
 
     // FIXME: We ignore the lightweight clipping rect that controls use, since if |o| is in mid-layout,
@@ -2160,11 +2268,13 @@ LayoutUnit RenderBox::computePercentageLogicalHeight(const Length& height) const
     
     bool skippedAutoHeightContainingBlock = false;
     RenderBlock* cb = containingBlock();
+    const RenderBox* containingBlockChild = this;
     LayoutUnit rootMarginBorderPaddingHeight = 0;
     while (!cb->isRenderView() && skipContainingBlockForPercentHeightCalculation(cb)) {
         if (cb->isBody() || cb->isRoot())
             rootMarginBorderPaddingHeight += cb->marginBefore() + cb->marginAfter() + cb->borderAndPaddingLogicalHeight();
         skippedAutoHeightContainingBlock = true;
+        containingBlockChild = cb;
         cb = cb->containingBlock();
         cb->addPercentHeightDescendant(const_cast<RenderBox*>(this));
     }
@@ -2180,26 +2290,30 @@ LayoutUnit RenderBox::computePercentageLogicalHeight(const Length& height) const
     bool includeBorderPadding = isTable();
 
     if (isHorizontalWritingMode() != cb->isHorizontalWritingMode())
-        availableHeight = cb->contentLogicalWidth();
-    else if (cb->isTableCell() && !skippedAutoHeightContainingBlock) {
-        // Table cells violate what the CSS spec says to do with heights. Basically we
-        // don't care if the cell specified a height or not. We just always make ourselves
-        // be a percentage of the cell's current content height.
-        if (!cb->hasOverrideHeight()) {
-            // Normally we would let the cell size intrinsically, but scrolling overflow has to be
-            // treated differently, since WinIE lets scrolled overflow regions shrink as needed.
-            // While we can't get all cases right, we can at least detect when the cell has a specified
-            // height or when the table has a specified height. In these cases we want to initially have
-            // no size and allow the flexing of the table or the cell to its specified height to cause us
-            // to grow to fill the space. This could end up being wrong in some cases, but it is
-            // preferable to the alternative (sizing intrinsically and making the row end up too big).
-            RenderTableCell* cell = toRenderTableCell(cb);
-            if (scrollsOverflowY() && (!cell->style()->logicalHeight().isAuto() || !cell->table()->style()->logicalHeight().isAuto()))
-                return 0;
-            return -1;
+        availableHeight = containingBlockChild->containingBlockLogicalWidthForContent();
+    else if (hasOverrideContainingBlockLogicalHeight())
+        availableHeight = overrideContainingBlockContentLogicalHeight();
+    else if (cb->isTableCell()) {
+        if (!skippedAutoHeightContainingBlock) {
+            // Table cells violate what the CSS spec says to do with heights. Basically we
+            // don't care if the cell specified a height or not. We just always make ourselves
+            // be a percentage of the cell's current content height.
+            if (!cb->hasOverrideHeight()) {
+                // Normally we would let the cell size intrinsically, but scrolling overflow has to be
+                // treated differently, since WinIE lets scrolled overflow regions shrink as needed.
+                // While we can't get all cases right, we can at least detect when the cell has a specified
+                // height or when the table has a specified height. In these cases we want to initially have
+                // no size and allow the flexing of the table or the cell to its specified height to cause us
+                // to grow to fill the space. This could end up being wrong in some cases, but it is
+                // preferable to the alternative (sizing intrinsically and making the row end up too big).
+                RenderTableCell* cell = toRenderTableCell(cb);
+                if (scrollsOverflowY() && (!cell->style()->logicalHeight().isAuto() || !cell->table()->style()->logicalHeight().isAuto()))
+                    return 0;
+                return -1;
+            }
+            availableHeight = cb->overrideLogicalContentHeight();
+            includeBorderPadding = true;
         }
-        availableHeight = cb->overrideLogicalContentHeight();
-        includeBorderPadding = true;
     } else if (cbstyle->logicalHeight().isFixed()) {
         LayoutUnit contentBoxHeightWithScrollbar = cb->adjustContentBoxLogicalHeightForBoxSizing(cbstyle->logicalHeight().value());
         availableHeight = max<LayoutUnit>(0, contentBoxHeightWithScrollbar - cb->scrollbarLogicalHeight());
@@ -2325,7 +2439,7 @@ LayoutUnit RenderBox::computeReplacedLogicalHeightUsing(SizeType sizeType, Lengt
             if (isOutOfFlowPositioned())
                 availableHeight = containingBlockLogicalHeightForPositioned(toRenderBoxModelObject(cb));
             else {
-                availableHeight =  toRenderBox(cb)->availableLogicalHeight();
+                availableHeight = containingBlockLogicalHeightForContent();
                 // It is necessary to use the border-box to match WinIE's broken
                 // box model.  This is essential for sizing inside
                 // table cells using percentage heights.
@@ -2393,7 +2507,7 @@ LayoutUnit RenderBox::availableLogicalHeightUsing(const Length& h) const
     }
 
     // FIXME: This is wrong if the containingBlock has a perpendicular writing mode.
-    return containingBlock()->availableLogicalHeight();
+    return containingBlockLogicalHeightForContent();
 }
 
 void RenderBox::computeBlockDirectionMargins(const RenderBlock* containingBlock, LayoutUnit& marginBefore, LayoutUnit& marginAfter) const
@@ -2923,8 +3037,14 @@ static void computeBlockStaticDistance(Length& logicalTop, Length& logicalBottom
 void RenderBox::computePositionedLogicalHeight(LogicalExtentComputedValues& computedValues) const
 {
     if (isReplaced()) {
-        computePositionedLogicalHeightReplaced(computedValues);
-        return;
+        // FIXME: For regions with height auto, we want to compute width using the normal block sizing code.
+        // For now, regions are replaced elements and this code can be removed once the RenderRegion
+        // will inherit from RenderBlock instead of RenderReplaced.
+        // (see https://bugs.webkit.org/show_bug.cgi?id=74132 )
+        if (!isRenderRegion() || (isRenderRegion() && shouldComputeSizeAsReplaced())) {
+            computePositionedLogicalHeightReplaced(computedValues);
+            return;
+        }
     }
 
     // The following is based off of the W3C Working Draft from April 11, 2006 of
@@ -3512,6 +3632,10 @@ LayoutRect RenderBox::localCaretRect(InlineBox* box, int caretOffset, LayoutUnit
 
     // Move to local coords
     rect.moveBy(-location());
+
+    if (!isHorizontalWritingMode())
+        return rect.transposedRect();
+
     return rect;
 }
 
@@ -3926,6 +4050,17 @@ LayoutRect RenderBox::layoutOverflowRectForPropagation(RenderStyle* parentStyle)
         rect.setY(height() - rect.maxY());
 
     return rect;
+}
+
+LayoutRect RenderBox::overflowRectForPaintRejection() const
+{
+    LayoutRect overflowRect = visualOverflowRect();
+    if (!m_overflow || !usesCompositedScrolling())
+        return overflowRect;
+
+    overflowRect.unite(layoutOverflowRect());
+    overflowRect.move(-scrolledContentOffset());
+    return overflowRect;
 }
 
 LayoutUnit RenderBox::offsetLeft() const

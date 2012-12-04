@@ -51,7 +51,7 @@ class ResourceRequest;
 
 class MainResourceLoader : public ResourceLoader {
 public:
-    static PassRefPtr<MainResourceLoader> create(Frame*);
+    static PassRefPtr<MainResourceLoader> create(DocumentLoader*);
     virtual ~MainResourceLoader();
 
     void load(const ResourceRequest&, const SubstituteData&);
@@ -76,14 +76,13 @@ public:
     virtual void reportMemoryUsage(MemoryObjectInfo*) const OVERRIDE;
 
 private:
-    explicit MainResourceLoader(Frame*);
+    explicit MainResourceLoader(DocumentLoader*);
 
     virtual void willCancel(const ResourceError&) OVERRIDE;
     virtual void didCancel(const ResourceError&) OVERRIDE;
 
-    bool loadNow(ResourceRequest&);
+    void loadNow(ResourceRequest&);
 
-    void handleEmptyLoad(const KURL&, bool forURLScheme);
     void handleSubstituteDataLoadSoon(const ResourceRequest&);
     void handleSubstituteDataLoadNow(MainResourceLoaderTimer*);
 

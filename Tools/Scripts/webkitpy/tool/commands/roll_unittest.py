@@ -34,20 +34,20 @@ from webkitpy.tool.mocktool import MockOptions, MockTool
 
 class RollCommandsTest(CommandsTest):
     def test_update_chromium_deps(self):
-        expected_stderr = """Updating Chromium DEPS to 6764
+        expected_logs = """Updating Chromium DEPS to 6764
 MOCK: MockDEPS.write_variable(chromium_rev, 6764)
 MOCK: user.open_url: file://...
 Was that diff correct?
 Committed r49824: <http://trac.webkit.org/changeset/49824>
 """
-        self.assert_execute_outputs(RollChromiumDEPS(), [6764], expected_stderr=expected_stderr)
+        self.assert_execute_outputs(RollChromiumDEPS(), [6764], expected_logs=expected_logs)
 
     def test_update_chromium_deps_older_revision(self):
         options = MockOptions(non_interactive=False)
-        expected_stderr = """Current Chromium DEPS revision 6564 is newer than 5764.
-ERROR: Unable to update Chromium DEPS
+        expected_logs = """Current Chromium DEPS revision 6564 is newer than 5764.
+Unable to update Chromium DEPS
 """
-        self.assert_execute_outputs(RollChromiumDEPS(), [5764], options=options, expected_stderr=expected_stderr, expected_exception=SystemExit)
+        self.assert_execute_outputs(RollChromiumDEPS(), [5764], options=options, expected_logs=expected_logs, expected_exception=SystemExit)
 
 
 class PostRollCommandsTest(CommandsTest):
@@ -56,8 +56,8 @@ class PostRollCommandsTest(CommandsTest):
         options = MockOptions()
         tool = MockTool()
         lkgr_state = postroll._prepare_state(options, [None, "last-known good revision"], tool)
-        self.assertEquals(None, lkgr_state["chromium_revision"])
-        self.assertEquals("Roll Chromium DEPS to last-known good revision", lkgr_state["bug_title"])
+        self.assertEqual(None, lkgr_state["chromium_revision"])
+        self.assertEqual("Roll Chromium DEPS to last-known good revision", lkgr_state["bug_title"])
         revision_state = postroll._prepare_state(options, ["1234", "r1234"], tool)
-        self.assertEquals("1234", revision_state["chromium_revision"])
-        self.assertEquals("Roll Chromium DEPS to r1234", revision_state["bug_title"])
+        self.assertEqual("1234", revision_state["chromium_revision"])
+        self.assertEqual("Roll Chromium DEPS to r1234", revision_state["bug_title"])

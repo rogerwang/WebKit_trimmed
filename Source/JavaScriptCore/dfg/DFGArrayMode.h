@@ -31,11 +31,18 @@
 #if ENABLE(DFG_JIT)
 
 #include "ArrayProfile.h"
+#include "DFGNodeFlags.h"
 #include "SpeculatedType.h"
 
-namespace JSC { namespace DFG {
+namespace JSC {
 
+struct CodeOrigin;
+
+namespace DFG {
+
+class Graph;
 struct AbstractValue;
+struct Node;
 
 // Use a namespace + enum instead of enum alone to avoid the namespace collision
 // that would otherwise occur, since we say things like "Int8Array" and "JSArray"
@@ -80,13 +87,15 @@ enum Class {
 };
 
 enum Speculation {
-    InBounds,
-    ToHole,
-    OutOfBounds
+    SaneChain, // In bounds and the array prototype chain is still intact, i.e. loading a hole doesn't require special treatment.
+    InBounds, // In bounds and not loading a hole.
+    ToHole, // Potentially storing to a hole.
+    OutOfBounds // Out-of-bounds access and anything can happen.
 };
 enum Conversion {
     AsIs,
-    Convert
+    Convert,
+    RageConvert
 };
 } // namespace Array
 
@@ -161,7 +170,7 @@ public:
             mySpeculation = Array::InBounds;
         
         if (isJSArray()) {
-            if (profile->usesOriginalArrayStructures())
+            if (profile->usesOriginalArrayStructures() && benefitsFromOriginalArray())
                 myArrayClass = Array::OriginalArray;
             else
                 myArrayClass = Array::Array;
@@ -176,16 +185,21 @@ public:
         return ArrayMode(type, arrayClass(), speculation(), conversion());
     }
     
+    ArrayMode withConversion(Array::Conversion conversion) const
+    {
+        return ArrayMode(type(), arrayClass(), speculation(), conversion);
+    }
+    
     ArrayMode withTypeAndConversion(Array::Type type, Array::Conversion conversion) const
     {
         return ArrayMode(type, arrayClass(), speculation(), conversion);
     }
     
-    ArrayMode refine(SpeculatedType base, SpeculatedType index, SpeculatedType value = SpecNone) const;
+    ArrayMode refine(SpeculatedType base, SpeculatedType index, SpeculatedType value = SpecNone, NodeFlags = 0) const;
     
-    bool alreadyChecked(AbstractValue&) const;
+    bool alreadyChecked(Graph&, Node&, AbstractValue&) const;
     
-    const char* toString() const;
+    void dump(PrintStream&) const;
     
     bool usesButterfly() const
     {
@@ -217,9 +231,20 @@ public:
         return arrayClass() == Array::OriginalArray;
     }
     
+    bool isSaneChain() const
+    {
+        return speculation() == Array::SaneChain;
+    }
+    
     bool isInBounds() const
     {
-        return speculation() == Array::InBounds;
+        switch (speculation()) {
+        case Array::SaneChain:
+        case Array::InBounds:
+            return true;
+        default:
+            return false;
+        }
     }
     
     bool mayStoreToHole() const
@@ -303,6 +328,23 @@ public:
         }
     }
     
+    bool benefitsFromOriginalArray() const
+    {
+        switch (type()) {
+        case Array::Int32:
+        case Array::Double:
+        case Array::Contiguous:
+        case Array::ArrayStorage:
+            return true;
+        default:
+            return false;
+        }
+    }
+    
+    // Returns 0 if this is not OriginalArray.
+    Structure* originalArrayStructure(Graph&, const CodeOrigin&) const;
+    Structure* originalArrayStructure(Graph&, Node&) const;
+    
     bool benefitsFromStructureCheck() const
     {
         switch (type()) {
@@ -318,7 +360,7 @@ public:
     
     bool doesConversion() const
     {
-        return conversion() == Array::Convert;
+        return conversion() != Array::AsIs;
     }
     
     ArrayModes arrayModesThatPassFiltering() const
@@ -375,7 +417,7 @@ private:
         }
     }
     
-    bool alreadyChecked(AbstractValue&, IndexingType shape) const;
+    bool alreadyChecked(Graph&, Node&, AbstractValue&, IndexingType shape) const;
     
     union {
         struct {
@@ -399,6 +441,16 @@ static inline bool lengthNeedsStorage(const ArrayMode& arrayMode)
 }
 
 } } // namespace JSC::DFG
+
+namespace WTF {
+
+class PrintStream;
+void printInternal(PrintStream&, JSC::DFG::Array::Type);
+void printInternal(PrintStream&, JSC::DFG::Array::Class);
+void printInternal(PrintStream&, JSC::DFG::Array::Speculation);
+void printInternal(PrintStream&, JSC::DFG::Array::Conversion);
+
+} // namespace WTF
 
 #endif // ENABLE(DFG_JIT)
 

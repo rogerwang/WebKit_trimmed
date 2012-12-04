@@ -1,4 +1,3 @@
-CONSOLE MESSAGE: The setVersion() method is non-standard and will be removed. Use the "upgradeneeded" event instead.
 Test IndexedDB behavior adding the same property twice
 
 On success, you will see a series of "PASS" messages, followed by "TEST COMPLETE".
@@ -6,16 +5,15 @@ On success, you will see a series of "PASS" messages, followed by "TEST COMPLETE
 
 indexedDB = self.indexedDB || self.webkitIndexedDB || self.mozIndexedDB || self.msIndexedDB || self.OIndexedDB;
 
-indexedDB.open(name)
-db = event.target.result
-request = db.setVersion('1')
-Deleted all object stores.
+dbname = "add-twice-failure.html"
+indexedDB.deleteDatabase(dbname)
+indexedDB.open(dbname)
 objectStore = db.createObjectStore('foo');
 key = 10
 request = objectStore.add({}, key);
 PASS request.result is key
 request = objectStore.add({}, key);
-PASS event.target.errorCode is IDBDatabaseException.CONSTRAINT_ERR
+PASS event.target.error.name is 'ConstraintError'
 PASS successfullyParsed is true
 
 TEST COMPLETE

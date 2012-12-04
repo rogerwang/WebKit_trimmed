@@ -45,6 +45,7 @@
 #include "WebEditorClient.h"
 #include "WebElementPropertyBag.h"
 #include "WebFrame.h"
+#include "WebFrameNetworkingContext.h"
 #include "WebGeolocationClient.h"
 #include "WebGeolocationPosition.h"
 #include "WebIconDatabase.h"
@@ -128,6 +129,7 @@
 #include <WebCore/ResourceHandle.h>
 #include <WebCore/ResourceHandleClient.h>
 #include <WebCore/ResourceRequest.h>
+#include <WebCore/RuntimeEnabledFeatures.h>
 #include <WebCore/SchemeRegistry.h>
 #include <WebCore/ScriptValue.h>
 #include <WebCore/Scrollbar.h>
@@ -1349,11 +1351,7 @@ bool WebView::handleContextMenuEvent(WPARAM wParam, LPARAM lParam)
     if (!coreMenu)
         return false;
 
-    Node* node = contextMenuController->hitTestResult().innerNonSharedNode();
-    if (!node)
-        return false;
-
-    Frame* frame = node->document()->frame();
+    Frame* frame = contextMenuController->hitTestResult().innerNodeFrame();
     if (!frame)
         return false;
 
@@ -1361,7 +1359,7 @@ bool WebView::handleContextMenuEvent(WPARAM wParam, LPARAM lParam)
     if (!view)
         return false;
 
-    POINT point(view->contentsToWindow(contextMenuController->hitTestResult().roundedPoint()));
+    POINT point(view->contentsToWindow(contextMenuController->hitTestResult().roundedPointInInnerNodeFrame()));
 
     // Translate the point to screen coordinates
     if (!::ClientToScreen(m_viewWindow, &point))
@@ -4674,7 +4672,7 @@ HRESULT WebView::notifyPreferencesChanged(IWebNotification* notification)
     hr = preferences->isCSSRegionsEnabled(&enabled);
     if (FAILED(hr))
         return hr;
-    settings->setCSSRegionsEnabled(!!enabled);
+    RuntimeEnabledFeatures::setCSSRegionsEnabled(!!enabled);
 
     hr = preferences->privateBrowsingEnabled(&enabled);
     if (FAILED(hr))
@@ -4960,9 +4958,7 @@ HRESULT updateSharedSettingsFromPreferencesIfNeeded(IWebPreferences* preferences
         return hr;
 
 #if USE(CFNETWORK)
-    // Set cookie storage accept policy
-    if (RetainPtr<CFHTTPCookieStorageRef> cookieStorage = currentCFHTTPCookieStorage())
-        CFHTTPCookieStorageSetCookieAcceptPolicy(cookieStorage.get(), acceptPolicy);
+    WebFrameNetworkingContext::setCookieAcceptPolicyForAllContexts(acceptPolicy);
 #endif
 
     return S_OK;

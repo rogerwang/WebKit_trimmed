@@ -104,8 +104,10 @@ TextTrack::TextTrack(ScriptExecutionContext* context, TextTrackClient* client, c
     , m_client(client)
     , m_trackType(type)
     , m_readinessState(NotLoaded)
-    , m_showingByDefault(false)
     , m_trackIndex(invalidTrackIndex)
+    , m_renderedTrackIndex(invalidTrackIndex)
+    , m_showingByDefault(false)
+    , m_hasBeenConfigured(false)
 {
     setKind(kind);
 }
@@ -257,20 +259,18 @@ void TextTrack::removeCue(TextTrackCue* cue, ExceptionCode& ec)
     if (!cue)
         return;
 
-    // 4.8.10.12.4 Text track API
+    // 4.8.10.12.5 Text track API
 
     // The removeCue(cue) method of TextTrack objects, when invoked, must run the following steps:
 
-    // 1. If the given cue is not associated with the method's TextTrack 
-    // object's text track, then throw an InvalidStateError exception.
+    // 1. If the given cue is not currently listed in the method's TextTrack 
+    // object's text track's text track list of cues, then throw a NotFoundError exception.
     if (cue->track() != this) {
-        ec = INVALID_STATE_ERR;
+        ec = NOT_FOUND_ERR;
         return;
     }
-    
-    // 2. If the given cue is not currently listed in the method's TextTrack 
-    // object's text track's text track list of cues, then throw a NotFoundError exception.
-    // 3. Remove cue from the method's TextTrack object's text track's text track list of cues.
+
+    // 2. Remove cue from the method's TextTrack object's text track's text track list of cues.
     if (!m_cues || !m_cues->remove(cue)) {
         ec = INVALID_STATE_ERR;
         return;
@@ -313,6 +313,7 @@ int TextTrack::trackIndex()
 void TextTrack::invalidateTrackIndex()
 {
     m_trackIndex = invalidTrackIndex;
+    m_renderedTrackIndex = invalidTrackIndex;
 }
 
 bool TextTrack::isRendered()
@@ -332,6 +333,16 @@ TextTrackCueList* TextTrack::ensureTextTrackCueList()
         m_cues = TextTrackCueList::create();
 
     return m_cues.get();
+}
+
+int TextTrack::trackIndexRelativeToRenderedTracks()
+{
+    ASSERT(m_mediaElement);
+    
+    if (m_renderedTrackIndex == invalidTrackIndex)
+        m_renderedTrackIndex = m_mediaElement->textTracks()->getTrackIndexRelativeToRenderedTracks(this);
+    
+    return m_renderedTrackIndex;
 }
 
 } // namespace WebCore

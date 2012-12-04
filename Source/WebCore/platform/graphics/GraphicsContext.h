@@ -30,6 +30,7 @@
 #include "ColorSpace.h"
 #include "DashArray.h"
 #include "FloatRect.h"
+#include "Font.h"
 #include "Gradient.h"
 #include "Image.h"
 #include "ImageOrientation.h"
@@ -114,7 +115,6 @@ namespace WebCore {
 
     class AffineTransform;
     class DrawingBuffer;
-    class Font;
     class Generator;
 #if !USE(SKIA)
     class GraphicsContextPlatformPrivate;
@@ -167,6 +167,7 @@ namespace WebCore {
             , compositeOperator(CompositeSourceOver)
             , shouldAntialias(true)
             , shouldSmoothFonts(true)
+            , shouldSubpixelQuantizeFonts(true)
             , paintingDisabled(false)
             , shadowsIgnoreTransforms(false)
 #if USE(CG)
@@ -205,6 +206,7 @@ namespace WebCore {
 
         bool shouldAntialias : 1;
         bool shouldSmoothFonts : 1;
+        bool shouldSubpixelQuantizeFonts : 1;
         bool paintingDisabled : 1;
         bool shadowsIgnoreTransforms : 1;
 #if USE(CG)
@@ -256,6 +258,11 @@ namespace WebCore {
 
         void setShouldSmoothFonts(bool);
         bool shouldSmoothFonts() const;
+
+        // Normally CG enables subpixel-quantization because it improves the performance of aligning glyphs.
+        // In some cases we have to disable to to ensure a high-quality output of the glyphs.
+        void setShouldSubpixelQuantizeFonts(bool);
+        bool shouldSubpixelQuantizeFonts() const;
 
         const GraphicsContextState& state() const;
 
@@ -348,7 +355,7 @@ namespace WebCore {
 
         void drawText(const Font&, const TextRun&, const FloatPoint&, int from = 0, int to = -1);
         void drawEmphasisMarks(const Font&, const TextRun& , const AtomicString& mark, const FloatPoint&, int from = 0, int to = -1);
-        void drawBidiText(const Font&, const TextRun&, const FloatPoint&);
+        void drawBidiText(const Font&, const TextRun&, const FloatPoint&, Font::CustomFontNotReadyAction = Font::DoNotPaintIfFontNotReady);
         void drawHighlightForText(const Font&, const TextRun&, const FloatPoint&, int h, const Color& backgroundColor, ColorSpace, int from = 0, int to = -1);
 
         enum RoundingMode {

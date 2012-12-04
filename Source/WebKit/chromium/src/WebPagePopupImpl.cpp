@@ -42,8 +42,10 @@
 #include "PagePopupClient.h"
 #include "PageWidgetDelegate.h"
 #include "Settings.h"
+#include "WebCursorInfo.h"
 #include "WebInputEventConversion.h"
 #include "WebPagePopup.h"
+#include "WebSettingsImpl.h"
 #include "WebViewClient.h"
 #include "WebViewImpl.h"
 #include "WebWidgetClient.h"
@@ -128,6 +130,12 @@ private:
     virtual PlatformPageClient platformPageClient() const OVERRIDE
     {
         return PlatformPageClient(this);
+    }
+
+    virtual void setCursor(const WebCore::Cursor& cursor) OVERRIDE
+    {
+        if (m_popup->m_webView->client())
+            m_popup->m_webView->client()->didChangeCursor(WebCursorInfo(cursor));
     }
 
     // PageClientChromium methods:
@@ -242,7 +250,7 @@ void WebPagePopupImpl::layout()
 
 void WebPagePopupImpl::paint(WebCanvas* canvas, const WebRect& rect, PaintOptions)
 {
-    PageWidgetDelegate::paint(m_page.get(), 0, canvas, rect, PageWidgetDelegate::Opaque);
+    PageWidgetDelegate::paint(m_page.get(), 0, canvas, rect, PageWidgetDelegate::Opaque, m_webView->settingsImpl()->applyDeviceScaleFactorInCompositor());
 }
 
 void WebPagePopupImpl::resize(const WebSize& newSize)

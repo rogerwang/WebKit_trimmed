@@ -65,6 +65,7 @@
 #if ENABLE(REQUEST_AUTOCOMPLETE)
 #include "WebAutofillClient.h"
 #endif
+#include "WebCachedURLRequest.h"
 #include "WebDOMEvent.h"
 #include "WebDataSourceImpl.h"
 #include "WebDevToolsAgentPrivate.h"
@@ -1056,6 +1057,14 @@ void FrameLoaderClientImpl::dispatchUnableToImplementPolicy(const ResourceError&
     m_webFrame->client()->unableToImplementPolicyWithError(m_webFrame, error);
 }
 
+void FrameLoaderClientImpl::dispatchWillRequestResource(CachedResourceRequest* request)
+{
+    if (m_webFrame->client()) {
+        WebCachedURLRequest urlRequest(request);
+        m_webFrame->client()->willRequestResource(m_webFrame, urlRequest);
+    }
+}
+
 void FrameLoaderClientImpl::dispatchWillSendSubmitEvent(PassRefPtr<FormState> prpFormState)
 {
     if (m_webFrame->client())
@@ -1667,6 +1676,22 @@ void FrameLoaderClientImpl::didRequestAutocomplete(PassRefPtr<FormState> formSta
 {
     if (m_webFrame->viewImpl() && m_webFrame->viewImpl()->autofillClient())
         m_webFrame->viewImpl()->autofillClient()->didRequestAutocomplete(m_webFrame, WebFormElement(formState->form()));
+}
+#endif
+
+#if ENABLE(WEBGL)
+bool FrameLoaderClientImpl::allowWebGL(bool enabledPerSettings)
+{
+    if (m_webFrame->client())
+        return m_webFrame->client()->allowWebGL(m_webFrame, enabledPerSettings);
+
+    return enabledPerSettings;
+}
+
+void FrameLoaderClientImpl::didLoseWebGLContext(int arbRobustnessContextLostReason)
+{
+    if (m_webFrame->client())
+        m_webFrame->client()->didLoseWebGLContext(m_webFrame, arbRobustnessContextLostReason);
 }
 #endif
 

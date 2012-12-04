@@ -1,6 +1,6 @@
 window.jsTestIsAsync = true;
 if (window.internals)
-    internals.settings.setEnableMockPagePopup(true);
+    internals.setEnableMockPagePopup(true);
 
 var popupWindow = null;
 
@@ -23,6 +23,10 @@ function openPicker(input, callback) {
 function popupOpenCallbackWrapper() {
     popupWindow.removeEventListener("didOpenPicker", popupOpenCallbackWrapper);
     popupOpenCallback();
+}
+
+function waitUntilClosing(callback) {
+    setTimeout(callback, 1);
 }
 
 function sendKey(input, keyName, ctrlKey, altKey) {

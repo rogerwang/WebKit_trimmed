@@ -27,6 +27,7 @@
 #define Executable_h
 
 #include "CallData.h"
+#include "CodeBlockHash.h"
 #include "CodeSpecializationKind.h"
 #include "HandlerInfo.h"
 #include "JSFunction.h"
@@ -86,6 +87,8 @@ namespace JSC {
         static const bool hasImmortalStructure = true;
         static void destroy(JSCell*);
 #endif
+        
+        CodeBlockHash hashFor(CodeSpecializationKind) const;
 
         bool isFunctionExecutable()
         {
@@ -295,6 +298,8 @@ namespace JSC {
         static void destroy(JSCell*);
 #endif
 
+        CodeBlockHash hashFor(CodeSpecializationKind) const;
+
         NativeFunction function() { return m_function; }
         NativeFunction constructor() { return m_constructor; }
 
@@ -352,8 +357,10 @@ namespace JSC {
 #if ENABLE(JIT)
         static void destroy(JSCell*);
 #endif
+        
+        CodeBlockHash hashFor(CodeSpecializationKind) const;
 
-        const SourceCode& source() { return m_source; }
+        const SourceCode& source() const { return m_source; }
         intptr_t sourceID() const { return m_source.providerID(); }
         const String& sourceURL() const { return m_source.provider()->url(); }
         int lineNo() const { return m_firstLine; }
@@ -752,6 +759,7 @@ namespace JSC {
         : Base(globalData, scope->globalObject()->functionStructure())
         , m_executable(globalData, this, executable)
         , m_scope(globalData, this, scope)
+        , m_inheritorIDWatchpoint(InitializedBlind) // See comment in JSFunction.cpp concerning the reason for using InitializedBlind as opposed to InitializedWatching.
     {
     }
 

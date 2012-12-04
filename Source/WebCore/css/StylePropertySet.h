@@ -143,13 +143,13 @@ public:
     PassRefPtr<StylePropertySet> copyPropertiesInSet(const CSSPropertyID* set, unsigned length) const;
     
     String asText() const;
-    
-    void clearParentElement(StyledElement*);
 
+    PropertySetCSSStyleDeclaration* cssStyleDeclaration();
     CSSStyleDeclaration* ensureCSSStyleDeclaration();
     CSSStyleDeclaration* ensureInlineCSSStyleDeclaration(const StyledElement* parentElement);
 
     bool isMutable() const { return m_isMutable; }
+    bool hasCSSOMWrapper() const { return m_ownsCSSOMWrapper; }
 
     bool hasFailedOrCanceledSubresources() const;
 
@@ -197,7 +197,7 @@ private:
     String get4Values(const StylePropertyShorthand&) const;
     String borderSpacingValue(const StylePropertyShorthand&) const;
     String fontValue() const;
-    bool appendFontLonghandValueIfExplicit(CSSPropertyID, StringBuilder& result) const;
+    bool appendFontLonghandValueIfExplicit(CSSPropertyID, StringBuilder& result, String& value) const;
 
     bool removeShorthandProperty(CSSPropertyID);
     bool propertyMatches(const PropertyReference&) const;

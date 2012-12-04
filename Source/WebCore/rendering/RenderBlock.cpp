@@ -97,7 +97,7 @@ struct SameSizeAsMarginInfo {
     LayoutUnit margins[2];
 };
 
-typedef WTF::HashMap<const RenderBox*, ColumnInfo*> ColumnInfoMap;
+typedef WTF::HashMap<const RenderBox*, OwnPtr<ColumnInfo> > ColumnInfoMap;
 static ColumnInfoMap* gColumnInfoMap = 0;
 
 static TrackedDescendantsMap* gPositionedDescendantsMap = 0;
@@ -106,7 +106,7 @@ static TrackedDescendantsMap* gPercentHeightDescendantsMap = 0;
 static TrackedContainerMap* gPositionedContainerMap = 0;
 static TrackedContainerMap* gPercentHeightContainerMap = 0;
     
-typedef WTF::HashMap<RenderBlock*, ListHashSet<RenderInline*>*> ContinuationOutlineTableMap;
+typedef WTF::HashMap<RenderBlock*, OwnPtr<ListHashSet<RenderInline*> > > ContinuationOutlineTableMap;
 
 typedef WTF::HashSet<RenderBlock*> DelayedUpdateScrollInfoSet;
 static int gDelayUpdateScrollInfo = 0;
@@ -200,21 +200,19 @@ RenderBlock::RenderBlock(Node* node)
 
 static void removeBlockFromDescendantAndContainerMaps(RenderBlock* block, TrackedDescendantsMap*& descendantMap, TrackedContainerMap*& containerMap)
 {
-    if (TrackedRendererListHashSet* descendantSet = descendantMap->take(block)) {
+    if (OwnPtr<TrackedRendererListHashSet> descendantSet = descendantMap->take(block)) {
         TrackedRendererListHashSet::iterator end = descendantSet->end();
         for (TrackedRendererListHashSet::iterator descendant = descendantSet->begin(); descendant != end; ++descendant) {
-            HashSet<RenderBlock*>* containerSet = containerMap->get(*descendant);
-            ASSERT(containerSet);
-            if (!containerSet)
+            TrackedContainerMap::iterator it = containerMap->find(*descendant);
+            ASSERT(it != containerMap->end());
+            if (it == containerMap->end())
                 continue;
+            HashSet<RenderBlock*>* containerSet = it->value.get();
             ASSERT(containerSet->contains(block));
             containerSet->remove(block);
-            if (containerSet->isEmpty()) {
-                containerMap->remove(*descendant);
-                delete containerSet;
-            }
+            if (containerSet->isEmpty())
+                containerMap->remove(it);
         }
-        delete descendantSet;
     }
 }
 
@@ -224,7 +222,7 @@ RenderBlock::~RenderBlock()
         deleteAllValues(m_floatingObjects->set());
     
     if (hasColumns())
-        delete gColumnInfoMap->take(this);
+        gColumnInfoMap->take(this);
 
     if (gPercentHeightDescendantsMap)
         removeBlockFromDescendantAndContainerMaps(this, gPercentHeightDescendantsMap, gPercentHeightContainerMap);
@@ -298,7 +296,7 @@ void RenderBlock::styleWillChange(StyleDifference diff, const RenderStyle* newSt
         if (newStyle->position() == StaticPosition)
             // Clear our positioned objects list. Our absolutely positioned descendants will be
             // inserted into our containing block's positioned objects list during layout.
-            removePositionedObjects(0);
+            removePositionedObjects(0, NewContainingBlock);
         else if (oldStyle->position() == StaticPosition) {
             // Remove our absolutely positioned descendants from their current containing block.
             // They will be inserted into our positioned objects list during layout.
@@ -312,7 +310,7 @@ void RenderBlock::styleWillChange(StyleDifference diff, const RenderStyle* newSt
             }
             
             if (cb->isRenderBlock())
-                toRenderBlock(cb)->removePositionedObjects(this);
+                toRenderBlock(cb)->removePositionedObjects(this, NewContainingBlock);
         }
 
         if (containsFloats() && !isFloating() && !isOutOfFlowPositioned() && newStyle->hasOutOfFlowPosition())
@@ -560,7 +558,7 @@ RenderBlock* RenderBlock::clone() const
         cloneBlock->setChildrenInline(childrenInline());
     }
     else {
-        RenderObject* cloneRenderer = node()->createRenderer(renderArena(), style());
+        RenderObject* cloneRenderer = toElement(node())->createRenderer(renderArena(), style());
         cloneBlock = toRenderBlock(cloneRenderer);
         cloneBlock->setStyle(style());
 
@@ -675,6 +673,7 @@ void RenderBlock::splitFlow(RenderObject* beforeChild, RenderBlock* newBlockBox,
         // We can reuse this block and make it the preBlock of the next continuation.
         pre = block;
         pre->removePositionedObjects(0);
+        pre->removeFloatingObjects();
         block = toRenderBlock(block->parent());
     } else {
         // No anonymous block available for use.  Make one.
@@ -1398,7 +1397,7 @@ void RenderBlock::layout()
 }
 
 #if ENABLE(CSS_EXCLUSIONS)
-void RenderBlock::updateExclusionShapeInsideInfoAfterStyleChange(const BasicShape* shapeInside, const BasicShape* oldShapeInside)
+void RenderBlock::updateExclusionShapeInsideInfoAfterStyleChange(const ExclusionShapeValue* shapeInside, const ExclusionShapeValue* oldShapeInside)
 {
     // FIXME: A future optimization would do a deep comparison for equality.
     if (shapeInside == oldShapeInside)
@@ -1730,7 +1729,6 @@ void RenderBlock::addOverflowFromFloats()
         if (r->isDescendant())
             addOverflowFromChild(r->m_renderer, IntSize(xPositionForFloatIncludingMargin(r), yPositionForFloatIncludingMargin(r)));
     }
-    return;
 }
 
 void RenderBlock::addOverflowFromPositionedObjects()
@@ -2758,7 +2756,7 @@ void RenderBlock::paint(PaintInfo& paintInfo, const LayoutPoint& paintOffset)
     // FIXME: Could eliminate the isRoot() check if we fix background painting so that the RenderView
     // paints the root's background.
     if (!isRoot()) {
-        LayoutRect overflowBox = visualOverflowRect();
+        LayoutRect overflowBox = overflowRectForPaintRejection();
         flipForWritingMode(overflowBox);
         overflowBox.inflate(maximalOutlineSize(paintInfo.phase));
         overflowBox.moveBy(adjustedPaintOffset);
@@ -2927,8 +2925,8 @@ void RenderBlock::paintColumnContents(PaintInfo& paintInfo, const LayoutPoint& p
 void RenderBlock::paintContents(PaintInfo& paintInfo, const LayoutPoint& paintOffset)
 {
     // Avoid painting descendants of the root element when stylesheets haven't loaded.  This eliminates FOUC.
-    // It's ok not to draw, because later on, when all the stylesheets do load, updateStyleSelector on the Document
-    // will do a full repaint().
+    // It's ok not to draw, because later on, when all the stylesheets do load, styleResolverChanged() on the Document
+    // will do a full repaint.
     if (document()->didLayoutWithPendingStylesheets() && !isRenderView())
         return;
 
@@ -3182,7 +3180,7 @@ void RenderBlock::addContinuationWithOutline(RenderInline* flow)
     ListHashSet<RenderInline*>* continuations = table->get(this);
     if (!continuations) {
         continuations = new ListHashSet<RenderInline*>;
-        table->set(this, continuations);
+        table->set(this, adoptPtr(continuations));
     }
     
     continuations->add(flow);
@@ -3207,7 +3205,7 @@ void RenderBlock::paintContinuationOutlines(PaintInfo& info, const LayoutPoint& 
     if (table->isEmpty())
         return;
         
-    ListHashSet<RenderInline*>* continuations = table->get(this);
+    OwnPtr<ListHashSet<RenderInline*> > continuations = table->take(this);
     if (!continuations)
         return;
 
@@ -3223,10 +3221,6 @@ void RenderBlock::paintContinuationOutlines(PaintInfo& info, const LayoutPoint& 
         ASSERT(block);   
         flow->paintOutline(info.context, accumulatedPaintOffset);
     }
-    
-    // Delete
-    delete continuations;
-    table->remove(this);
 }
 
 bool RenderBlock::shouldPaintSelectionGaps() const
@@ -3654,7 +3648,7 @@ void RenderBlock::insertIntoTrackedRendererMaps(RenderBox* descendant, TrackedDe
     TrackedRendererListHashSet* descendantSet = descendantsMap->get(this);
     if (!descendantSet) {
         descendantSet = new TrackedRendererListHashSet;
-        descendantsMap->set(this, descendantSet);
+        descendantsMap->set(this, adoptPtr(descendantSet));
     }
     bool added = descendantSet->add(descendant).isNewEntry;
     if (!added) {
@@ -3666,7 +3660,7 @@ void RenderBlock::insertIntoTrackedRendererMaps(RenderBox* descendant, TrackedDe
     HashSet<RenderBlock*>* containerSet = containerMap->get(descendant);
     if (!containerSet) {
         containerSet = new HashSet<RenderBlock*>;
-        containerMap->set(descendant, containerSet);
+        containerMap->set(descendant, adoptPtr(containerSet));
     }
     ASSERT(!containerSet->contains(this));
     containerSet->add(this);
@@ -3677,7 +3671,7 @@ void RenderBlock::removeFromTrackedRendererMaps(RenderBox* descendant, TrackedDe
     if (!descendantsMap)
         return;
     
-    HashSet<RenderBlock*>* containerSet = containerMap->take(descendant);
+    OwnPtr<HashSet<RenderBlock*> > containerSet = containerMap->take(descendant);
     if (!containerSet)
         return;
     
@@ -3690,19 +3684,16 @@ void RenderBlock::removeFromTrackedRendererMaps(RenderBox* descendant, TrackedDe
         // their ancestor chain before being moved. See webkit bug 93766.
         // ASSERT(descendant->isDescendantOf(container));
 
-        TrackedRendererListHashSet* descendantSet = descendantsMap->get(container);
-        ASSERT(descendantSet);
-        if (!descendantSet)
+        TrackedDescendantsMap::iterator descendantsMapIterator = descendantsMap->find(container);
+        ASSERT(descendantsMapIterator != descendantsMap->end());
+        if (descendantsMapIterator == descendantsMap->end())
             continue;
+        TrackedRendererListHashSet* descendantSet = descendantsMapIterator->value.get();
         ASSERT(descendantSet->contains(descendant));
         descendantSet->remove(descendant);
-        if (descendantSet->isEmpty()) {
-            descendantsMap->remove(container);
-            delete descendantSet;
-        }
+        if (descendantSet->isEmpty())
+            descendantsMap->remove(descendantsMapIterator);
     }
-    
-    delete containerSet;
 }
 
 TrackedRendererListHashSet* RenderBlock::positionedObjects() const
@@ -3727,7 +3718,7 @@ void RenderBlock::removePositionedObject(RenderBox* o)
     removeFromTrackedRendererMaps(o, gPositionedDescendantsMap, gPositionedContainerMap);
 }
 
-void RenderBlock::removePositionedObjects(RenderBlock* o)
+void RenderBlock::removePositionedObjects(RenderBlock* o, ContainingBlockState containingBlockState)
 {
     TrackedRendererListHashSet* positionedDescendants = positionedObjects();
     if (!positionedDescendants)
@@ -3742,7 +3733,7 @@ void RenderBlock::removePositionedObjects(RenderBlock* o)
     for (TrackedRendererListHashSet::iterator it = positionedDescendants->begin(); it != end; ++it) {
         r = *it;
         if (!o || r->isDescendantOf(o)) {
-            if (o)
+            if (containingBlockState == NewContainingBlock)
                 r->setChildNeedsLayout(true, MarkOnlyThis);
             
             // It is parent blocks job to add positioned child to positioned objects list of its containing block
@@ -3759,6 +3750,15 @@ void RenderBlock::removePositionedObjects(RenderBlock* o)
     
     for (unsigned i = 0; i < deadObjects.size(); i++)
         removePositionedObject(deadObjects.at(i));
+}
+
+void RenderBlock::removeFloatingObjects()
+{
+    if (!m_floatingObjects)
+        return;
+
+    deleteAllValues(m_floatingObjects->set());
+    m_floatingObjects->clear();
 }
 
 RenderBlock::FloatingObject* RenderBlock::insertFloatingObject(RenderBox* o)
@@ -5211,7 +5211,7 @@ void RenderBlock::setDesiredColumnCountAndWidth(int count, LayoutUnit width)
     bool destroyColumns = !requiresColumns(count);
     if (destroyColumns) {
         if (hasColumns()) {
-            delete gColumnInfoMap->take(this);
+            gColumnInfoMap->take(this);
             setHasColumns(false);
         }
     } else {
@@ -5222,7 +5222,7 @@ void RenderBlock::setDesiredColumnCountAndWidth(int count, LayoutUnit width)
             if (!gColumnInfoMap)
                 gColumnInfoMap = new ColumnInfoMap;
             info = new ColumnInfo;
-            gColumnInfoMap->add(this, info);
+            gColumnInfoMap->add(this, adoptPtr(info));
             setHasColumns(true);
         }
         info->setDesiredColumnCount(count);
@@ -7245,7 +7245,14 @@ bool RenderBlock::lineWidthForPaginatedLineChanged(RootInlineBox* rootBox, Layou
     if (!inRenderFlowThread())
         return false;
 
-    return rootBox->paginatedLineWidth() != availableLogicalWidthForContent(rootBox->lineTopWithLeading() + lineDelta);
+    RenderRegion* currentRegion = regionAtBlockOffset(rootBox->lineTopWithLeading() + lineDelta);
+    // Just bail if we still don't have a region.
+    if (!rootBox->hasContainingRegion() && !currentRegion)
+        return false;
+    // Just bail if the region didn't change.
+    if (rootBox->hasContainingRegion() && rootBox->containingRegion() == currentRegion)
+        return false;
+    return rootBox->paginatedLineWidth() != availableLogicalWidthForContent(currentRegion, offsetFromLogicalTopOfFirstPage());
 }
 
 LayoutUnit RenderBlock::offsetFromLogicalTopOfFirstPage() const

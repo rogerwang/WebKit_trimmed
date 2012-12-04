@@ -319,12 +319,14 @@ void QQuickWebViewPrivate::initialize(WKContextRef contextRef, WKPageGroupRef pa
     webPageProxy->pageGroup()->preferences()->setAcceleratedCompositingEnabled(true);
     webPageProxy->pageGroup()->preferences()->setForceCompositingMode(true);
     webPageProxy->pageGroup()->preferences()->setFrameFlatteningEnabled(true);
+    webPageProxy->pageGroup()->preferences()->setWebGLEnabled(true);
 
     pageClient.initialize(q_ptr, pageViewPrivate->eventHandler.data(), &undoController);
     webPageProxy->initializeWebPage();
 
     q_ptr->setAcceptedMouseButtons(Qt::MouseButtonMask);
     q_ptr->setAcceptHoverEvents(true);
+    q_ptr->setFlags(QQuickItem::ItemAcceptsDrops);
 }
 
 void QQuickWebViewPrivate::loadDidStop()
@@ -887,15 +889,6 @@ void QQuickWebViewFlickablePrivate::pageDidRequestScroll(const QPoint& pos)
 {
     if (m_pageViewportController)
         m_pageViewportController->pageDidRequestScroll(pos);
-}
-
-void QQuickWebViewFlickablePrivate::handleMouseEvent(QMouseEvent* event)
-{
-    if (!pageView->eventHandler())
-        return;
-
-    // FIXME: Update the axis locker for mouse events as well.
-    pageView->eventHandler()->handleInputEvent(event);
 }
 
 QQuickWebViewExperimental::QQuickWebViewExperimental(QQuickWebView *webView, QQuickWebViewPrivate* webViewPrivate)

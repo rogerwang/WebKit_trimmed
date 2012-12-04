@@ -369,6 +369,15 @@ public:
     bool inProgrammaticScroll() const { return m_inProgrammaticScroll; }
     void setInProgrammaticScroll(bool programmaticScroll) { m_inProgrammaticScroll = programmaticScroll; }
 
+#if ENABLE(CSS_FILTERS)
+    void setHasSoftwareFilters(bool hasSoftwareFilters) { m_hasSoftwareFilters = hasSoftwareFilters; }
+    bool hasSoftwareFilters() const { return m_hasSoftwareFilters; }
+#endif
+#if ENABLE(CSS_DEVICE_ADAPTATION)
+    IntSize initialViewportSize() const { return m_initialViewportSize; }
+    void setInitialViewportSize(const IntSize& size) { m_initialViewportSize = size; }
+#endif
+
 protected:
     virtual bool scrollContentsFastPath(const IntSize& scrollDelta, const IntRect& rectToScroll, const IntRect& clipRect);
     virtual void scrollContentsSlowPath(const IntRect& updateRect);
@@ -564,6 +573,15 @@ private:
     static double s_initialDeferredRepaintDelayDuringLoading;
     static double s_maxDeferredRepaintDelayDuringLoading;
     static double s_deferredRepaintDelayIncrementDuringLoading;
+
+#if ENABLE(CSS_FILTERS)
+    bool m_hasSoftwareFilters;
+#endif
+#if ENABLE(CSS_DEVICE_ADAPTATION)
+    // Size of viewport before any UA or author styles have overridden
+    // the viewport given by the window or viewing area of the UA.
+    IntSize m_initialViewportSize;
+#endif
 };
 
 inline void FrameView::incrementVisuallyNonEmptyCharacterCount(unsigned count)

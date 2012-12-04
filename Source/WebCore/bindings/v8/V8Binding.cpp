@@ -47,7 +47,7 @@
 #include "V8XPathNSResolver.h"
 #include "WebCoreMemoryInstrumentation.h"
 #include "WorkerContext.h"
-#include "WorkerContextExecutionProxy.h"
+#include "WorkerScriptController.h"
 #include "WorldContextHandle.h"
 #include "XPathNSResolver.h"
 #include <wtf/MathExtras.h>
@@ -79,7 +79,7 @@ v8::Handle<v8::Value> setDOMException(int exceptionCode, v8::Isolate* isolate)
     return V8ThrowException::setDOMException(exceptionCode, isolate);
 }
 
-v8::Handle<v8::Value> throwError(ErrorType errorType, const char* message, v8::Isolate* isolate)
+v8::Handle<v8::Value> throwError(V8ErrorType errorType, const char* message, v8::Isolate* isolate)
 {
     return V8ThrowException::throwError(errorType, message, isolate);
 }
@@ -325,20 +325,11 @@ v8::Local<v8::Context> toV8Context(ScriptExecutionContext* context, const WorldC
             return worldContext.adjustedContext(frame->script());
 #if ENABLE(WORKERS)
     } else if (context->isWorkerContext()) {
-        if (WorkerContextExecutionProxy* proxy = static_cast<WorkerContext*>(context)->script()->proxy())
-            return proxy->context();
+        if (WorkerScriptController* script = static_cast<WorkerContext*>(context)->script())
+            return script->context();
 #endif
     }
     return v8::Local<v8::Context>();
-}
-
-V8PerContextData* perContextDataForCurrentWorld(Frame* frame)
-{
-    V8DOMWindowShell* isolatedShell;
-    if (UNLIKELY(!!(isolatedShell = V8DOMWindowShell::getEntered())))
-        return isolatedShell->perContextData();
-    V8DOMWindowShell* mainShell = frame->script()->existingWindowShell(mainThreadNormalWorld());
-    return mainShell ? mainShell->perContextData() : 0;
 }
 
 bool handleOutOfMemory()
@@ -367,7 +358,7 @@ bool handleOutOfMemory()
 
 v8::Local<v8::Value> handleMaxRecursionDepthExceeded()
 {
-    throwError(RangeError, "Maximum call stack size exceeded.");
+    throwError(v8RangeError, "Maximum call stack size exceeded.");
     return v8::Local<v8::Value>();
 }
 

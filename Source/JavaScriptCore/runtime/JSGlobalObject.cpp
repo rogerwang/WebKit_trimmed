@@ -259,8 +259,6 @@ void JSGlobalObject::reset(JSValue prototype)
     m_regExpPrototype.set(exec->globalData(), this, RegExpPrototype::create(exec, this, RegExpPrototype::createStructure(exec->globalData(), this, m_objectPrototype.get()), emptyRegex));
     m_regExpStructure.set(exec->globalData(), this, RegExpObject::createStructure(exec->globalData(), this, m_regExpPrototype.get()));
 
-    m_methodCallDummy.set(exec->globalData(), this, constructEmptyObject(exec));
-
     m_errorPrototype.set(exec->globalData(), this, ErrorPrototype::create(exec, this, ErrorPrototype::createStructure(exec->globalData(), this, m_objectPrototype.get())));
     m_errorStructure.set(exec->globalData(), this, ErrorInstance::createStructure(exec->globalData(), this, m_errorPrototype.get()));
 
@@ -437,6 +435,14 @@ void JSGlobalObject::haveABadTime(JSGlobalData& globalData)
     }
 }
 
+bool JSGlobalObject::arrayPrototypeChainIsSane()
+{
+    return !hasIndexedProperties(m_arrayPrototype->structure()->indexingType())
+        && m_arrayPrototype->prototype() == m_objectPrototype.get()
+        && !hasIndexedProperties(m_objectPrototype->structure()->indexingType())
+        && m_objectPrototype->prototype().isNull();
+}
+
 void JSGlobalObject::createThrowTypeError(ExecState* exec)
 {
     JSFunction* thrower = JSFunction::create(exec, this, 0, String(), globalFuncThrowTypeError);
@@ -466,7 +472,6 @@ void JSGlobalObject::visitChildren(JSCell* cell, SlotVisitor& visitor)
     Base::visitChildren(thisObject, visitor);
 
     visitor.append(&thisObject->m_globalThis);
-    visitor.append(&thisObject->m_methodCallDummy);
 
     visitor.append(&thisObject->m_regExpConstructor);
     visitor.append(&thisObject->m_errorConstructor);

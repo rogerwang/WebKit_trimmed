@@ -28,6 +28,7 @@
 #include "PageClientDefaultImpl.h"
 
 #include "EwkViewImpl.h"
+#include "ewk_view.h"
 
 #if USE(TILED_BACKING_STORE)
 #include "PageViewportController.h"
@@ -65,6 +66,20 @@ void PageClientDefaultImpl::updateViewportSize(const WebCore::IntSize& size)
 #endif
 }
 
+FloatRect PageClientDefaultImpl::convertToDeviceSpace(const FloatRect& userRect)
+{
+    FloatRect result = userRect;
+    result.scale(m_viewImpl->page()->deviceScaleFactor());
+    return result;
+}
+
+FloatRect PageClientDefaultImpl::convertToUserSpace(const FloatRect& deviceRect)
+{
+    FloatRect result = deviceRect;
+    result.scale(1 / m_viewImpl->page()->deviceScaleFactor());
+    return result;
+}
+
 void PageClientDefaultImpl::didChangeViewportProperties(const WebCore::ViewportAttributes& attr)
 {
 #if USE(TILED_BACKING_STORE)
@@ -80,9 +95,9 @@ void PageClientDefaultImpl::didChangeContentsSize(const WebCore::IntSize& size)
 #if USE(TILED_BACKING_STORE)
     ASSERT(m_pageViewportController);
     m_pageViewportController->didChangeContentsSize(size);
-#else
-    m_viewImpl->informContentsSizeChange(size);
 #endif
+
+    m_viewImpl->smartCallback<ContentsSizeChanged>().call(size);
 }
 
 #if USE(TILED_BACKING_STORE)

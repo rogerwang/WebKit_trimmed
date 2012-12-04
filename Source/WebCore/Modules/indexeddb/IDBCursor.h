@@ -38,6 +38,7 @@
 
 namespace WebCore {
 
+class DOMRequestState;
 class IDBAny;
 class IDBCallbacks;
 class IDBCursorBackendInterface;
@@ -76,7 +77,7 @@ public:
     const ScriptValue& value() const;
     IDBAny* source() const;
 
-    PassRefPtr<IDBRequest> update(ScriptExecutionContext*, ScriptValue&, ExceptionCode&);
+    PassRefPtr<IDBRequest> update(ScriptState*, ScriptValue&, ExceptionCode&);
     // FIXME: Make this unsigned long once webkit.org/b/96798 lands.
     void advance(long long, ExceptionCode&);
     void continueFunction(PassRefPtr<IDBKey>, ExceptionCode&);
@@ -84,7 +85,7 @@ public:
 
     void postSuccessHandlerCallback();
     void close();
-    void setValueReady(ScriptExecutionContext*, PassRefPtr<IDBKey>, PassRefPtr<IDBKey> primaryKey, ScriptValue&);
+    void setValueReady(DOMRequestState*, PassRefPtr<IDBKey>, PassRefPtr<IDBKey> primaryKey, ScriptValue&);
     PassRefPtr<IDBKey> idbPrimaryKey() { return m_currentPrimaryKey; }
 
 protected:

@@ -21,6 +21,7 @@
 #include "config.h"
 #include "EwkViewImpl.h"
 
+#include "ContextMenuClientEfl.h"
 #include "EflScreenUtilities.h"
 #include "FindClientEfl.h"
 #include "FormClientEfl.h"
@@ -34,14 +35,20 @@
 #include "PagePolicyClientEfl.h"
 #include "PageUIClientEfl.h"
 #include "ResourceLoadClientEfl.h"
+#include "SnapshotImageGL.h"
+#include "WKDictionary.h"
+#include "WKGeometry.h"
+#include "WKNumber.h"
 #include "WKString.h"
 #include "WebContext.h"
+#include "WebImage.h"
 #include "WebPageGroup.h"
 #include "WebPageProxy.h"
 #include "WebPopupMenuProxyEfl.h"
 #include "WebPreferences.h"
 #include "ewk_back_forward_list_private.h"
 #include "ewk_color_picker_private.h"
+#include "ewk_context_menu_private.h"
 #include "ewk_context_private.h"
 #include "ewk_favicon_database_private.h"
 #include "ewk_popup_menu_item_private.h"
@@ -51,10 +58,13 @@
 #include "ewk_settings_private.h"
 #include "ewk_view.h"
 #include "ewk_view_private.h"
+#include "ewk_window_features_private.h"
 #include <Ecore_Evas.h>
 #include <Ecore_X.h>
 #include <Edje.h>
+#include <WebCore/CairoUtilitiesEfl.h>
 #include <WebCore/Cursor.h>
+#include <WebKit2/WKImageCairo.h>
 
 #if ENABLE(VIBRATION)
 #include "VibrationClientEfl.h"
@@ -104,12 +114,16 @@ const Evas_Object* EwkViewImpl::viewFromPageViewMap(const WKPageRef page)
 EwkViewImpl::EwkViewImpl(Evas_Object* view, PassRefPtr<EwkContext> context, PassRefPtr<WebPageGroup> pageGroup, ViewBehavior behavior)
     : m_view(view)
     , m_context(context)
+#if USE(ACCELERATED_COMPOSITING)
+    , m_pendingSurfaceResize(false)
+#endif
     , m_pageClient(behavior == DefaultBehavior ? PageClientDefaultImpl::create(this) : PageClientLegacyImpl::create(this))
     , m_pageProxy(m_context->webContext()->createWebPage(m_pageClient.get(), pageGroup.get()))
     , m_pageLoadClient(PageLoadClientEfl::create(this))
     , m_pagePolicyClient(PagePolicyClientEfl::create(this))
     , m_pageUIClient(PageUIClientEfl::create(this))
     , m_resourceLoadClient(ResourceLoadClientEfl::create(this))
+    , m_contextMenuClient(ContextMenuClientEfl::create(this))
     , m_findClient(FindClientEfl::create(this))
     , m_formClient(FormClientEfl::create(this))
 #if ENABLE(VIBRATION)
@@ -127,6 +141,8 @@ EwkViewImpl::EwkViewImpl(Evas_Object* view, PassRefPtr<EwkContext> context, Pass
 #endif
     , m_displayTimer(this, &EwkViewImpl::displayTimerFired)
     , m_inputMethodContext(InputMethodContextEfl::create(this, smartData()->base.evas))
+    , m_isHardwareAccelerated(true)
+    , m_setDrawsBackground(false)
 {
     ASSERT(m_view);
     ASSERT(m_context);
@@ -148,6 +164,8 @@ EwkViewImpl::EwkViewImpl(Evas_Object* view, PassRefPtr<EwkContext> context, Pass
     m_pageProxy->fullScreenManager()->setWebView(m_view);
     m_pageProxy->pageGroup()->preferences()->setFullScreenEnabled(true);
 #endif
+
+    m_pageProxy->pageGroup()->preferences()->setOfflineWebApplicationCacheEnabled(true);
 
     // Enable mouse events by default
     setMouseEventsEnabled(true);
@@ -276,8 +294,8 @@ AffineTransform EwkViewImpl::transformFromScene() const
     AffineTransform transform;
 
 #if USE(TILED_BACKING_STORE)
-    transform.translate(m_scrollPosition.x(), m_scrollPosition.y());
     transform.scale(1 / m_scaleFactor);
+    transform.translate(discretePagePosition().x(), discretePagePosition().y());
 #endif
 
     Ewk_View_Smart_Data* sd = smartData();
@@ -302,7 +320,14 @@ AffineTransform EwkViewImpl::transformToScreen() const
 
 #ifdef HAVE_ECORE_X
     Ecore_Evas* ecoreEvas = ecore_evas_ecore_evas_get(sd->base.evas);
-    Ecore_X_Window window = ecore_evas_software_x11_window_get(ecoreEvas); // Returns 0 if none.
+
+    Ecore_X_Window window;
+#if USE(ACCELERATED_COMPOSITING)
+    window = ecore_evas_gl_x11_window_get(ecoreEvas);
+    // Fallback to software mode if necessary.
+    if (!window)
+#endif
+    window = ecore_evas_software_x11_window_get(ecoreEvas); // Returns 0 if none.
 
     int x, y; // x, y are relative to parent (in a reparenting window manager).
     while (window) {
@@ -319,23 +344,58 @@ AffineTransform EwkViewImpl::transformToScreen() const
     return transform;
 }
 
+#if USE(COORDINATED_GRAPHICS)
+LayerTreeRenderer* EwkViewImpl::layerTreeRenderer()
+{
+    DrawingAreaProxy* drawingArea = page()->drawingArea();
+    if (!drawingArea)
+        return 0;
+
+    WebKit::LayerTreeCoordinatorProxy* layerTreeCoordinatorProxy = drawingArea->layerTreeCoordinatorProxy();
+    if (!layerTreeCoordinatorProxy)
+        return 0;
+
+    return layerTreeCoordinatorProxy->layerTreeRenderer();
+}
+#endif
+
 void EwkViewImpl::displayTimerFired(Timer<EwkViewImpl>*)
 {
 #if USE(COORDINATED_GRAPHICS)
     Ewk_View_Smart_Data* sd = smartData();
 
-    evas_gl_make_current(evasGL(), evasGLSurface(), evasGLContext());
+    if (m_pendingSurfaceResize) {
+        // Create a GL surface here so that Evas has no chance of painting to an empty GL surface.
+        createGLSurface(IntSize(sd->view.w, sd->view.h));
+        m_pendingSurfaceResize = false;
+    } else
+        evas_gl_make_current(m_evasGL.get(), evasGLSurface(), evasGLContext());
 
     // We are supposed to clip to the actual viewport, nothing less.
     IntRect viewport(sd->view.x, sd->view.y, sd->view.w, sd->view.h);
 
-    LayerTreeRenderer* renderer = page()->drawingArea()->layerTreeCoordinatorProxy()->layerTreeRenderer();
+    LayerTreeRenderer* renderer = layerTreeRenderer();
+    if (!renderer)
+        return;
+
     renderer->setActive(true);
-    renderer->syncRemoteContent();
+    renderer->setDrawsBackground(m_setDrawsBackground);
+    if (m_isHardwareAccelerated) {
+        renderer->paintToCurrentGLContext(transformToScene().toTransformationMatrix(), /* opacity */ 1, viewport);
+        // sd->image is tied to a native surface. The native surface is in the parent's coordinates,
+        // so we need to account for the viewport position when calling evas_object_image_data_update_add.
+        evas_object_image_data_update_add(sd->image, viewport.x(), viewport.y(), viewport.width(), viewport.height());
+    } else {
+        RefPtr<cairo_surface_t> surface = createSurfaceForImage(sd->image);
+        if (!surface)
+            return;
 
-    renderer->paintToCurrentGLContext(transformToScene().toTransformationMatrix(), /* opacity */ 1, viewport);
-
-    evas_object_image_data_update_add(sd->image, viewport.x(), viewport.y(), viewport.width(), viewport.height());
+        RefPtr<cairo_t> graphicsContext = adoptRef(cairo_create(surface.get()));
+        cairo_translate(graphicsContext.get(), - discretePagePosition().x(), - discretePagePosition().y());
+        cairo_scale(graphicsContext.get(), m_scaleFactor, m_scaleFactor);
+        renderer->paintToGraphicsContext(graphicsContext.get());
+        evas_object_image_data_update_add(sd->image, 0, 0, viewport.width(), viewport.height());
+    }
 #endif
 }
 
@@ -566,15 +626,24 @@ void EwkViewImpl::informIconChange()
 #if USE(ACCELERATED_COMPOSITING)
 bool EwkViewImpl::createGLSurface(const IntSize& viewSize)
 {
+    if (!m_isHardwareAccelerated)
+        return true;
+
     if (!m_evasGL) {
         Evas* evas = evas_object_evas_get(m_view);
         m_evasGL = adoptPtr(evas_gl_new(evas));
-        if (!m_evasGL)
+        if (!m_evasGL) {
+            WARN("Failed to create Evas_GL, falling back to software mode.");
+            m_isHardwareAccelerated = false;
+#if ENABLE(WEBGL)
+            m_pageProxy->pageGroup()->preferences()->setWebGLEnabled(false);
+#endif
             return false;
+        }
     }
 
     if (!m_evasGLContext) {
-        m_evasGLContext = EvasGLContext::create(evasGL());
+        m_evasGLContext = EvasGLContext::create(m_evasGL.get());
         if (!m_evasGLContext) {
             WARN("Failed to create GLContext.");
             return false;
@@ -591,25 +660,32 @@ bool EwkViewImpl::createGLSurface(const IntSize& viewSize)
         EVAS_GL_MULTISAMPLE_NONE
     };
 
-    ASSERT(!m_evasGLSurface);
-    m_evasGLSurface = EvasGLSurface::create(evasGL(), &evasGLConfig, viewSize);
+    // Replaces if non-null, and frees existing surface after (OwnPtr).
+    m_evasGLSurface = EvasGLSurface::create(m_evasGL.get(), &evasGLConfig, viewSize);
     if (!m_evasGLSurface)
         return false;
 
     Evas_Native_Surface nativeSurface;
-    evas_gl_native_surface_get(evasGL(), evasGLSurface(), &nativeSurface);
+    evas_gl_native_surface_get(m_evasGL.get(), evasGLSurface(), &nativeSurface);
     evas_object_image_native_surface_set(sd->image, &nativeSurface);
 
-    evas_gl_make_current(evasGL(), evasGLSurface(), evasGLContext());
+    evas_gl_make_current(m_evasGL.get(), evasGLSurface(), evasGLContext());
 
-    Evas_GL_API* gl = evas_gl_api_get(evasGL());
+    Evas_GL_API* gl = evas_gl_api_get(m_evasGL.get());
     gl->glViewport(0, 0, viewSize.width() + sd->view.x, viewSize.height() + sd->view.y);
+    gl->glClearColor(1.0, 1.0, 1.0, 0);
+    gl->glClear(GL_COLOR_BUFFER_BIT);
 
     return true;
 }
 
 bool EwkViewImpl::enterAcceleratedCompositingMode()
 {
+    layerTreeRenderer()->setActive(true);
+
+    if (!m_isHardwareAccelerated)
+        return true;
+
     if (!m_evasGLSurface) {
         if (!createGLSurface(size())) {
             WARN("Failed to create GLSurface.");
@@ -617,7 +693,6 @@ bool EwkViewImpl::enterAcceleratedCompositingMode()
         }
     }
 
-    page()->drawingArea()->layerTreeCoordinatorProxy()->layerTreeRenderer()->setActive(true);
     return true;
 }
 
@@ -667,17 +742,40 @@ void EwkViewImpl::dismissColorPicker()
 }
 #endif
 
-void EwkViewImpl::informContentsSizeChange(const IntSize& size)
-{
-#if USE(COORDINATED_GRAPHICS)
-    m_pageClient->didChangeContentsSize(size);
-#else
-    UNUSED_PARAM(size);
-#endif
-}
-
 COMPILE_ASSERT_MATCHING_ENUM(EWK_TEXT_DIRECTION_RIGHT_TO_LEFT, RTL);
 COMPILE_ASSERT_MATCHING_ENUM(EWK_TEXT_DIRECTION_LEFT_TO_RIGHT, LTR);
+
+void EwkViewImpl::showContextMenu(WebContextMenuProxyEfl* contextMenuProxy, const WebCore::IntPoint& position, const Vector<WebContextMenuItemData>& items)
+{
+    Ewk_View_Smart_Data* sd = smartData();
+    ASSERT(sd->api);
+
+    ASSERT(contextMenuProxy);
+
+    if (!sd->api->context_menu_show)
+        return;
+
+    if (m_contextMenu)
+        hideContextMenu();
+
+    m_contextMenu = Ewk_Context_Menu::create(this, contextMenuProxy, items);
+
+    sd->api->context_menu_show(sd, position.x(), position.y(), m_contextMenu.get());
+}
+
+void EwkViewImpl::hideContextMenu()
+{
+    if (!m_contextMenu)
+        return;
+
+    Ewk_View_Smart_Data* sd = smartData();
+    ASSERT(sd->api);
+
+    if (sd->api->context_menu_hide)
+        sd->api->context_menu_hide(sd);
+
+    m_contextMenu.clear();
+}
 
 void EwkViewImpl::requestPopupMenu(WebPopupMenuProxyEfl* popupMenuProxy, const IntRect& rect, TextDirection textDirection, double pageScaleFactor, const Vector<WebPopupItem>& items, int32_t selectedIndex)
 {
@@ -797,23 +895,45 @@ void EwkViewImpl::informURLChange()
     informIconChange();
 }
 
-WKPageRef EwkViewImpl::createNewPage()
+EwkWindowFeatures* EwkViewImpl::windowFeatures()
 {
-    Evas_Object* newEwkView = 0;
-    smartCallback<CreateWindow>().call(&newEwkView);
+    if (!m_windowFeatures)
+        m_windowFeatures = EwkWindowFeatures::create(0, this);
 
+    return m_windowFeatures.get();
+}
+
+WKPageRef EwkViewImpl::createNewPage(ImmutableDictionary* windowFeatures)
+{
+    Ewk_View_Smart_Data* sd = smartData();
+    ASSERT(sd->api);
+
+    if (!sd->api->window_create)
+        return 0;
+
+    RefPtr<EwkWindowFeatures> ewkWindowFeatures = EwkWindowFeatures::create(windowFeatures, this);
+
+    Evas_Object* newEwkView = sd->api->window_create(sd, ewkWindowFeatures.get());
     if (!newEwkView)
         return 0;
 
     EwkViewImpl* newViewImpl = EwkViewImpl::fromEvasObject(newEwkView);
     ASSERT(newViewImpl);
 
+    newViewImpl->m_windowFeatures = ewkWindowFeatures;
+
     return static_cast<WKPageRef>(WKRetain(newViewImpl->page()));
 }
 
 void EwkViewImpl::closePage()
 {
-    smartCallback<CloseWindow>().call();
+    Ewk_View_Smart_Data* sd = smartData();
+    ASSERT(sd->api);
+
+    if (!sd->api->window_close)
+        return;
+
+    sd->api->window_close(sd);
 }
 
 void EwkViewImpl::onMouseDown(void* data, Evas*, Evas_Object*, void* eventInfo)
@@ -895,4 +1015,23 @@ void EwkViewImpl::onFaviconChanged(const char* pageURL, void* eventInfo)
         return;
 
     viewImpl->informIconChange();
+}
+
+WKImageRef EwkViewImpl::takeSnapshot()
+{
+    Ewk_View_Smart_Data* sd = smartData();
+#if USE(ACCELERATED_COMPOSITING)
+    if (!m_isHardwareAccelerated)
+#endif
+        return WKImageCreateFromCairoSurface(createSurfaceForImage(sd->image).get(), 0);
+
+#if USE(ACCELERATED_COMPOSITING)
+    Evas_Native_Surface* nativeSurface = evas_object_image_native_surface_get(sd->image);
+    unsigned char* buffer = getImageFromCurrentTexture(sd->view.w, sd->view.h, nativeSurface->data.opengl.texture_id);
+    RefPtr<cairo_surface_t> surface = adoptRef(cairo_image_surface_create_for_data(buffer, CAIRO_FORMAT_ARGB32, sd->view.w, sd->view.h, sd->view.w * 4));
+    WKImageRef image = WKImageCreateFromCairoSurface(surface.get(), 0);
+    delete[] buffer;
+
+    return image;
+#endif
 }

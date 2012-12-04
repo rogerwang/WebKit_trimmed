@@ -49,7 +49,7 @@ static v8::Handle<v8::Value> itemCallback(const v8::Arguments& args)
     TestEventTarget* imp = V8TestEventTarget::toNative(args.Holder());
     ExceptionCode ec = 0;
     {
-    EXCEPTION_BLOCK(int, index, toUInt32(MAYBE_MISSING_PARAMETER(args, 0, DefaultIsUndefined)));
+    V8TRYCATCH(int, index, toUInt32(MAYBE_MISSING_PARAMETER(args, 0, DefaultIsUndefined)));
     if (UNLIKELY(index < 0)) {
         ec = INDEX_SIZE_ERR;
         goto fail;
@@ -65,7 +65,8 @@ static v8::Handle<v8::Value> addEventListenerCallback(const v8::Arguments& args)
     INC_STATS("DOM.TestEventTarget.addEventListener()");
     RefPtr<EventListener> listener = V8DOMWrapper::getEventListener(args[1], false, ListenerFindOrCreate);
     if (listener) {
-        V8TestEventTarget::toNative(args.Holder())->addEventListener(toWebCoreAtomicString(args[0]), listener, args[2]->BooleanValue());
+        V8TRYCATCH_FOR_V8STRINGRESOURCE(V8StringResource<WithNullCheck>, stringResource, args[0]);
+        V8TestEventTarget::toNative(args.Holder())->addEventListener(stringResource, listener, args[2]->BooleanValue());
         createHiddenDependency(args.Holder(), args[1], V8TestEventTarget::eventListenerCacheIndex);
     }
     return v8Undefined();
@@ -76,7 +77,8 @@ static v8::Handle<v8::Value> removeEventListenerCallback(const v8::Arguments& ar
     INC_STATS("DOM.TestEventTarget.removeEventListener()");
     RefPtr<EventListener> listener = V8DOMWrapper::getEventListener(args[1], false, ListenerFindOnly);
     if (listener) {
-        V8TestEventTarget::toNative(args.Holder())->removeEventListener(toWebCoreAtomicString(args[0]), listener.get(), args[2]->BooleanValue());
+        V8TRYCATCH_FOR_V8STRINGRESOURCE(V8StringResource<WithNullCheck>, stringResource, args[0]);
+        V8TestEventTarget::toNative(args.Holder())->removeEventListener(stringResource, listener.get(), args[2]->BooleanValue());
         removeHiddenDependency(args.Holder(), args[1], V8TestEventTarget::eventListenerCacheIndex);
     }
     return v8Undefined();
@@ -90,7 +92,7 @@ static v8::Handle<v8::Value> dispatchEventCallback(const v8::Arguments& args)
     TestEventTarget* imp = V8TestEventTarget::toNative(args.Holder());
     ExceptionCode ec = 0;
     {
-    EXCEPTION_BLOCK(Event*, evt, V8Event::HasInstance(MAYBE_MISSING_PARAMETER(args, 0, DefaultIsUndefined)) ? V8Event::toNative(v8::Handle<v8::Object>::Cast(MAYBE_MISSING_PARAMETER(args, 0, DefaultIsUndefined))) : 0);
+    V8TRYCATCH(Event*, evt, V8Event::HasInstance(MAYBE_MISSING_PARAMETER(args, 0, DefaultIsUndefined)) ? V8Event::toNative(v8::Handle<v8::Object>::Cast(MAYBE_MISSING_PARAMETER(args, 0, DefaultIsUndefined))) : 0);
     bool result = imp->dispatchEvent(evt, ec);
     if (UNLIKELY(ec))
         goto fail;
@@ -170,32 +172,17 @@ bool V8TestEventTarget::HasInstance(v8::Handle<v8::Value> value)
 }
 
 
-v8::Handle<v8::Object> V8TestEventTarget::wrapSlow(PassRefPtr<TestEventTarget> impl, v8::Handle<v8::Object> creationContext, v8::Isolate* isolate)
+v8::Handle<v8::Object> V8TestEventTarget::createWrapper(PassRefPtr<TestEventTarget> impl, v8::Handle<v8::Object> creationContext, v8::Isolate* isolate)
 {
-    v8::Handle<v8::Object> wrapper;
-    // Please don't add any more uses of this variable.
-    Document* deprecatedDocument = 0;
-    UNUSED_PARAM(deprecatedDocument);
+    ASSERT(impl.get());
+    ASSERT(DOMDataStore::current(isolate)->get(impl.get()).IsEmpty());
 
-    v8::Handle<v8::Context> context;
-    if (!creationContext.IsEmpty() && creationContext->CreationContext() != v8::Context::GetCurrent()) {
-        // For performance, we enter the context only if the currently running context
-        // is different from the context that we are about to enter.
-        context = v8::Local<v8::Context>::New(creationContext->CreationContext());
-        ASSERT(!context.IsEmpty());
-        context->Enter();
-    }
-
-    wrapper = V8DOMWrapper::instantiateV8Object(deprecatedDocument, &info, impl.get());
-
-    if (!context.IsEmpty())
-        context->Exit();
-
+    v8::Handle<v8::Object> wrapper = V8DOMWrapper::instantiateV8Object(creationContext, &info, impl.get());
     if (UNLIKELY(wrapper.IsEmpty()))
         return wrapper;
 
     installPerContextProperties(wrapper, impl.get());
-    v8::Persistent<v8::Object> wrapperHandle = V8DOMWrapper::setJSWrapperForDOMObject(impl, wrapper, isolate);
+    v8::Persistent<v8::Object> wrapperHandle = V8DOMWrapper::createDOMWrapper(impl, &info, wrapper, isolate);
     if (!hasDependentLifetime)
         wrapperHandle.MarkIndependent();
     return wrapper;

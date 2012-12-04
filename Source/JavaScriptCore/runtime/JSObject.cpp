@@ -129,13 +129,7 @@ ALWAYS_INLINE void JSObject::copyButterfly(CopyVisitor& visitor, Butterfly* butt
             size_t count;
             
             switch (structure->indexingType()) {
-            case ALL_UNDECIDED_INDEXING_TYPES: {
-                currentTarget = 0;
-                currentSource = 0;
-                count = 0;
-                break;
-            }
-                
+            case ALL_UNDECIDED_INDEXING_TYPES:
             case ALL_CONTIGUOUS_INDEXING_TYPES:
             case ALL_INT32_INDEXING_TYPES:
             case ALL_DOUBLE_INDEXING_TYPES: {
@@ -190,7 +184,7 @@ ALWAYS_INLINE void JSObject::visitButterfly(SlotVisitor& visitor, Butterfly* but
 
     // Mark the properties.
     visitor.appendValues(butterfly->propertyStorage() - storageSize, storageSize);
-    visitor.copyLater(butterfly->base(preCapacity, propertyCapacity), capacityInBytes);
+    visitor.copyLater(this, butterfly->base(preCapacity, propertyCapacity), capacityInBytes);
     
     // Mark the array if appropriate.
     switch (structure->indexingType()) {
@@ -356,26 +350,30 @@ void JSObject::put(JSCell* cell, ExecState* exec, PropertyName propertyName, JSV
         putByIndex(thisObject, exec, i, value, slot.isStrictMode());
         return;
     }
-
+    
     // Check if there are any setters or getters in the prototype chain
     JSValue prototype;
     if (propertyName != exec->propertyNames().underscoreProto) {
         for (JSObject* obj = thisObject; !obj->structure()->hasReadOnlyOrGetterSetterPropertiesExcludingProto(); obj = asObject(prototype)) {
             prototype = obj->prototype();
             if (prototype.isNull()) {
-                if (!thisObject->putDirectInternal<PutModePut>(globalData, propertyName, value, 0, slot, getCallableObject(value)) && slot.isStrictMode())
+                ASSERT(!thisObject->structure()->prototypeChainMayInterceptStoreTo(exec->globalData(), propertyName));
+                if (!thisObject->putDirectInternal<PutModePut>(globalData, propertyName, value, 0, slot, getCallableObject(value))
+                    && slot.isStrictMode())
                     throwTypeError(exec, ASCIILiteral(StrictModeReadonlyPropertyWriteError));
                 return;
             }
         }
     }
 
-    for (JSObject* obj = thisObject; ; obj = asObject(prototype)) {
+    JSObject* obj;
+    for (obj = thisObject; ; obj = asObject(prototype)) {
         unsigned attributes;
         JSCell* specificValue;
         PropertyOffset offset = obj->structure()->get(globalData, propertyName, attributes, specificValue);
         if (isValidOffset(offset)) {
             if (attributes & ReadOnly) {
+                ASSERT(thisObject->structure()->prototypeChainMayInterceptStoreTo(exec->globalData(), propertyName) || obj == thisObject);
                 if (slot.isStrictMode())
                     throwError(exec, createTypeError(exec, ASCIILiteral(StrictModeReadonlyPropertyWriteError)));
                 return;
@@ -383,6 +381,8 @@ void JSObject::put(JSCell* cell, ExecState* exec, PropertyName propertyName, JSV
 
             JSValue gs = obj->getDirectOffset(offset);
             if (gs.isGetterSetter()) {
+                ASSERT(attributes & Accessor);
+                ASSERT(thisObject->structure()->prototypeChainMayInterceptStoreTo(exec->globalData(), propertyName) || obj == thisObject);
                 JSObject* setterFunc = asGetterSetter(gs)->setter();        
                 if (!setterFunc) {
                     if (slot.isStrictMode())
@@ -398,7 +398,8 @@ void JSObject::put(JSCell* cell, ExecState* exec, PropertyName propertyName, JSV
                 // If this is WebCore's global object then we need to substitute the shell.
                 call(exec, setterFunc, callType, callData, thisObject->methodTable()->toThisObject(thisObject, exec), args);
                 return;
-            }
+            } else
+                ASSERT(!(attributes & Accessor));
 
             // If there's an existing property on the object or one of its 
             // prototypes it should be replaced, so break here.
@@ -410,6 +411,7 @@ void JSObject::put(JSCell* cell, ExecState* exec, PropertyName propertyName, JSV
             break;
     }
     
+    ASSERT(!thisObject->structure()->prototypeChainMayInterceptStoreTo(exec->globalData(), propertyName) || obj == thisObject);
     if (!thisObject->putDirectInternal<PutModePut>(globalData, propertyName, value, 0, slot, getCallableObject(value)) && slot.isStrictMode())
         throwTypeError(exec, ASCIILiteral(StrictModeReadonlyPropertyWriteError));
     return;
@@ -802,7 +804,8 @@ ArrayStorage* JSObject::convertInt32ToArrayStorage(JSGlobalData& globalData)
     return convertInt32ToArrayStorage(globalData, structure()->suggestedArrayStorageTransition());
 }
 
-WriteBarrier<Unknown>* JSObject::convertDoubleToContiguous(JSGlobalData& globalData)
+template<JSObject::DoubleToContiguousMode mode>
+WriteBarrier<Unknown>* JSObject::genericConvertDoubleToContiguous(JSGlobalData& globalData)
 {
     ASSERT(hasDouble(structure()->indexingType()));
     
@@ -814,11 +817,31 @@ WriteBarrier<Unknown>* JSObject::convertDoubleToContiguous(JSGlobalData& globalD
             currentAsValue->clear();
             continue;
         }
-        currentAsValue->setWithoutWriteBarrier(JSValue(JSValue::EncodeAsDouble, value));
+        JSValue v;
+        switch (mode) {
+        case EncodeValueAsDouble:
+            v = JSValue(JSValue::EncodeAsDouble, value);
+            break;
+        case RageConvertDoubleToValue:
+            v = jsNumber(value);
+            break;
+        }
+        ASSERT(v.isNumber());
+        currentAsValue->setWithoutWriteBarrier(v);
     }
     
     setStructure(globalData, Structure::nonPropertyTransition(globalData, structure(), AllocateContiguous));
     return m_butterfly->contiguous();
+}
+
+WriteBarrier<Unknown>* JSObject::convertDoubleToContiguous(JSGlobalData& globalData)
+{
+    return genericConvertDoubleToContiguous<EncodeValueAsDouble>(globalData);
+}
+
+WriteBarrier<Unknown>* JSObject::rageConvertDoubleToContiguous(JSGlobalData& globalData)
+{
+    return genericConvertDoubleToContiguous<RageConvertDoubleToValue>(globalData);
 }
 
 ArrayStorage* JSObject::convertDoubleToArrayStorage(JSGlobalData& globalData, NonPropertyTransition transition, unsigned neededLength)
@@ -972,7 +995,7 @@ double* JSObject::ensureDoubleSlow(JSGlobalData& globalData)
     }
 }
 
-WriteBarrier<Unknown>* JSObject::ensureContiguousSlow(JSGlobalData& globalData)
+WriteBarrier<Unknown>* JSObject::ensureContiguousSlow(JSGlobalData& globalData, DoubleToContiguousMode mode)
 {
     switch (structure()->indexingType()) {
     case ALL_BLANK_INDEXING_TYPES:
@@ -987,6 +1010,8 @@ WriteBarrier<Unknown>* JSObject::ensureContiguousSlow(JSGlobalData& globalData)
         return convertInt32ToContiguous(globalData);
         
     case ALL_DOUBLE_INDEXING_TYPES:
+        if (mode == RageConvertDoubleToValue)
+            return rageConvertDoubleToContiguous(globalData);
         return convertDoubleToContiguous(globalData);
         
     case ALL_ARRAY_STORAGE_INDEXING_TYPES:
@@ -996,6 +1021,16 @@ WriteBarrier<Unknown>* JSObject::ensureContiguousSlow(JSGlobalData& globalData)
         CRASH();
         return 0;
     }
+}
+
+WriteBarrier<Unknown>* JSObject::ensureContiguousSlow(JSGlobalData& globalData)
+{
+    return ensureContiguousSlow(globalData, EncodeValueAsDouble);
+}
+
+WriteBarrier<Unknown>* JSObject::rageEnsureContiguousSlow(JSGlobalData& globalData)
+{
+    return ensureContiguousSlow(globalData, RageConvertDoubleToValue);
 }
 
 ArrayStorage* JSObject::ensureArrayStorageSlow(JSGlobalData& globalData)

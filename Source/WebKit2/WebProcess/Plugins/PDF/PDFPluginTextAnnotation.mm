@@ -28,6 +28,7 @@
 #import "config.h"
 #import "PDFPluginTextAnnotation.h"
 
+#import "PDFAnnotationTextWidgetDetails.h"
 #import "PDFKitImports.h"
 #import "PDFLayerControllerDetails.h"
 #import <PDFKit/PDFKit.h>
@@ -39,10 +40,6 @@
 #import <WebCore/HTMLNames.h>
 #import <WebCore/HTMLTextAreaElement.h>
 #import <WebCore/Page.h>
-
-@interface PDFAnnotationTextWidget (Details)
-- (BOOL)isMultiline;
-@end
 
 using namespace WebCore;
 
@@ -107,7 +104,7 @@ void PDFPluginTextAnnotation::updateGeometry()
     PDFPluginAnnotation::updateGeometry();
 
     StyledElement* styledElement = static_cast<StyledElement*>(element());
-    styledElement->setInlineStyleProperty(CSSPropertyFontSize, textAnnotation().font.pointSize * pdfLayerController().tileScaleFactor, CSSPrimitiveValue::CSS_PX);
+    styledElement->setInlineStyleProperty(CSSPropertyFontSize, textAnnotation().font.pointSize * pdfLayerController().contentScaleFactor, CSSPrimitiveValue::CSS_PX);
 }
 
 void PDFPluginTextAnnotation::commit()

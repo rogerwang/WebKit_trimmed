@@ -32,13 +32,12 @@ import os
 import re
 import shutil
 import sys
+import tempfile
 
 from webkitpy.common.memoized import memoized
-from webkitpy.common.system.deprecated_logging import log
 from webkitpy.common.system.executive import Executive, ScriptError
 
 from .scm import AuthenticationError, SCM, commit_error_handler
-
 
 _log = logging.getLogger(__name__)
 
@@ -46,6 +45,7 @@ _log = logging.getLogger(__name__)
 # A mixin class that represents common functionality for SVN and Git-SVN.
 class SVNRepository:
     def has_authorization_for_realm(self, realm, home_directory=os.getenv("HOME")):
+        # ignore false positives for methods implemented in the mixee class. pylint: disable-msg=E1101
         # Assumes find and grep are installed.
         if not os.path.isdir(os.path.join(home_directory, ".subversion")):
             return False
@@ -75,8 +75,7 @@ class SVN(SCM, SVNRepository):
         SCM.__init__(self, cwd, **kwargs)
         self._bogus_dir = None
         if patch_directories == []:
-            # FIXME: ScriptError is for Executive, this should probably be a normal Exception.
-            raise ScriptError(script_args=svn_info_args, message='Empty list of patch directories passed to SCM.__init__')
+            raise Exception(message='Empty list of patch directories passed to SCM.__init__')
         elif patch_directories == None:
             self._patch_directories = [self._filesystem.relpath(cwd, self.checkout_root)]
         else:
@@ -310,8 +309,8 @@ class SVN(SCM, SVNRepository):
     def apply_reverse_diff(self, revision):
         # '-c -revision' applies the inverse diff of 'revision'
         svn_merge_args = ['merge', '--non-interactive', '-c', '-%s' % revision, self._repository_url()]
-        log("WARNING: svn merge has been known to take more than 10 minutes to complete.  It is recommended you use git for rollouts.")
-        log("Running 'svn %s'" % " ".join(svn_merge_args))
+        _log.warning("svn merge has been known to take more than 10 minutes to complete.  It is recommended you use git for rollouts.")
+        _log.debug("Running 'svn %s'" % " ".join(svn_merge_args))
         # FIXME: Should this use cwd=self.checkout_root?
         self._run_svn(svn_merge_args)
 

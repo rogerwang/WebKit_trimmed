@@ -21,7 +21,8 @@
 #include "config.h"
 #include "ewk_view.h"
 
-#include "ewk_frame.h"
+#include "TiledBackingStore.h"
+#include "ewk_frame_private.h"
 #include "ewk_private.h"
 #include "ewk_view_private.h"
 
@@ -100,10 +101,10 @@ static void _ewk_view_single_smart_resize(Evas_Object* ewkView, Evas_Coord width
     }
 }
 
-static inline void _ewk_view_screen_move(uint32_t* image, size_t destinationX, size_t destinationY, size_t sourceX, size_t sourceY, size_t copyWidth, size_t copyHeight, size_t frameWidth)
+static inline void _ewk_view_screen_move(uint32_t* image, size_t destinationX, size_t destinationY, size_t sourceX, size_t sourceY, size_t copyWidth, size_t copyHeight, size_t imageWidth)
 {
-    uint32_t* sourceBegin = image + (frameWidth * sourceY) + sourceX;
-    uint32_t* destinationBegin = image + (frameWidth * destinationY) + destinationX;
+    uint32_t* sourceBegin = image + (imageWidth * sourceY) + sourceX;
+    uint32_t* destinationBegin = image + (imageWidth * destinationY) + destinationX;
 
     size_t copyLength = copyWidth * 4;
     const int moveLineUpDown = sourceY >= destinationY ? 1 : -1;
@@ -112,15 +113,15 @@ static inline void _ewk_view_screen_move(uint32_t* image, size_t destinationX, s
     uint32_t* source, * destination;
     if (sourceX >= destinationX) {
         for (size_t i = 0; i < copyHeight; i++) {
-            source = sourceBegin + (frameWidth * startHeight);
-            destination = destinationBegin + (frameWidth * startHeight);
+            source = sourceBegin + (imageWidth * startHeight);
+            destination = destinationBegin + (imageWidth * startHeight);
             startHeight = startHeight + moveLineUpDown;
             memcpy(destination, source, copyLength);
         }
     } else {
         for (size_t i = 0; i < copyHeight; i++) {
-            source = sourceBegin + (frameWidth * startHeight);
-            destination = destinationBegin + (frameWidth * startHeight);
+            source = sourceBegin + (imageWidth * startHeight);
+            destination = destinationBegin + (imageWidth * startHeight);
             startHeight = startHeight + moveLineUpDown;
             memmove(destination, source, copyLength);
         }
@@ -175,7 +176,7 @@ static inline void _ewk_view_single_scroll_process_single(Ewk_View_Smart_Data* s
     int copyWidth = scrollWidth - abs(scrollRequest->dx);
     int copyHeight = scrollHeight - abs(scrollRequest->dy);
     if (scrollRequest->dx || scrollRequest->dy) {
-        _ewk_view_screen_move(static_cast<uint32_t*>(pixels), destinationX, destinationY, sourceX, sourceY, copyWidth, copyHeight, scrollWidth);
+        _ewk_view_screen_move(static_cast<uint32_t*>(pixels), destinationX, destinationY, sourceX, sourceY, copyWidth, copyHeight, width);
         evas_object_image_data_update_add(smartData->backing_store, destinationX, destinationY, copyWidth, copyHeight);
     }
 
@@ -261,6 +262,12 @@ static Eina_Bool _ewk_view_single_smart_repaints_process(Ewk_View_Smart_Data* sm
         eina_tiler_free(tiler);
         return false;
     }
+
+#if USE(TILED_BACKING_STORE)
+    WebCore::Frame* mainFrame = EWKPrivate::coreFrame(smartData->main_frame);
+    if (mainFrame && mainFrame->tiledBackingStore())
+        mainFrame->tiledBackingStore()->coverWithTilesIfNeeded();
+#endif
 
     Ewk_Paint_Context* context = ewk_paint_context_from_image_new(smartData->backing_store);
     ewk_paint_context_save(context);

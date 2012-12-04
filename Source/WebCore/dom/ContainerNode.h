@@ -131,6 +131,8 @@ public:
 
     void disconnectDescendantFrames();
 
+    virtual bool childShouldCreateRenderer(const NodeRenderingContext&) const { return true; }
+
     // More efficient versions of these two functions for the case where we are starting with a ContainerNode.
     Node* traverseNextNode() const;
     Node* traverseNextNode(const Node* stayWithin) const;
@@ -314,7 +316,11 @@ inline Node* ContainerNode::traverseNextNode(const Node* stayWithin) const
     return traverseNextSibling(stayWithin);
 }
 
-typedef Vector<RefPtr<Node>, 11> NodeVector;
+// This constant controls how much buffer is initially allocated
+// for a Node Vector that is used to store child Nodes of a given Node.
+// FIXME: Optimize the value.
+const int initialNodeVectorSize = 11;
+typedef Vector<RefPtr<Node>, initialNodeVectorSize> NodeVector;
 
 inline void getChildNodes(Node* node, NodeVector& nodes)
 {

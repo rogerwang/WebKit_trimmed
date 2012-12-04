@@ -35,6 +35,7 @@
 #endif
 #include "RenderTheme.h"
 
+#include <Eina.h>
 #include <cairo.h>
 #include <wtf/efl/RefPtrEfl.h>
 
@@ -94,6 +95,9 @@ public:
 
     // A general method asking if any control tinting is supported at all.
     virtual bool supportsControlTints() const { return true; }
+
+    // A general method asking if foreground colors of selection are supported.
+    virtual bool supportsSelectionForegroundColors() const;
 
     // A method to obtain the baseline position for a "leaf" control. This will only be used if a baseline
     // position cannot be determined by examining child content. Checkboxes and radio buttons are examples of
@@ -229,6 +233,7 @@ private:
     void applyPartDescriptionsFrom(const String& themePath);
 
     void applyEdjeStateFromForm(Evas_Object*, ControlStates);
+    void applyEdjeRTLState(Evas_Object*, RenderObject*, FormType, const IntRect&);
     bool paintThemePart(RenderObject*, FormType, const PaintInfo&, const IntRect&);
 
 #if ENABLE(VIDEO)
@@ -253,6 +258,8 @@ private:
     OwnPtr<Ecore_Evas> m_canvas;
     RefPtr<Evas_Object> m_edje;
 
+    bool m_supportsSelectionForegroundColor;
+
     struct ThemePartDesc {
         FormType type;
         LengthSize min;
@@ -263,8 +270,8 @@ private:
     void applyPartDescription(Evas_Object*, struct ThemePartDesc*);
 
     struct ThemePartCacheEntry {
-        static ThemePartCacheEntry* create(const String& themePath, FormType, const IntSize&);
-        void reuse(const String& themePath, FormType, const IntSize& = IntSize());
+        static PassOwnPtr<RenderThemeEfl::ThemePartCacheEntry> create(const String& themePath, FormType, const IntSize&);
+        void reuse(const String& themePath, FormType, const IntSize&);
 
         ALWAYS_INLINE Ecore_Evas* canvas() { return m_canvas.get(); }
         ALWAYS_INLINE Evas_Object* edje() { return m_edje.get(); }
@@ -282,12 +289,13 @@ private:
 
     struct ThemePartDesc m_partDescs[FormTypeLast];
 
-    // this should be small and not so frequently used,
-    // so use a vector and do linear searches
-    Vector<ThemePartCacheEntry*> m_partCache;
+    // List of ThemePartCacheEntry* sorted so that the most recently
+    // used entries come first. We use a list for efficient moving
+    // of items within the container.
+    Eina_List* m_partCache;
 
     ThemePartCacheEntry* getThemePartFromCache(FormType, const IntSize&);
-    void flushThemePartCache();
+    void clearThemePartCache();
 };
 }
 

@@ -1,4 +1,3 @@
-CONSOLE MESSAGE: The setVersion() method is non-standard and will be removed. Use the "upgradeneeded" event instead.
 Test transaction aborts send the proper onabort messages..
 
 On success, you will see a series of "PASS" messages, followed by "TEST COMPLETE".
@@ -6,14 +5,9 @@ On success, you will see a series of "PASS" messages, followed by "TEST COMPLETE
 
 indexedDB = self.indexedDB || self.webkitIndexedDB || self.mozIndexedDB || self.msIndexedDB || self.OIndexedDB;
 
-indexedDB.open('name')
-db = event.target.result
-db.setVersion('new version')
-setVersionSuccess():
-trans = event.target.result
-PASS trans is non-null.
-trans.oncomplete = startTest
-Deleted all object stores.
+dbname = "transaction-abort.html"
+indexedDB.deleteDatabase(dbname)
+indexedDB.open(dbname)
 store = db.createObjectStore('storeName', null)
 store.add({x: 'value', y: 'zzz'}, 'key')
 trans = db.transaction(['storeName'], 'readwrite')
@@ -22,7 +16,6 @@ trans.oncomplete = unexpectedCompleteCallback
 store = trans.objectStore('storeName')
 store.add({x: 'value2', y: 'zzz2'}, 'key2')
 store.add({x: 'value3', y: 'zzz3'}, 'key3')
-PASS event.target.errorCode is DOMException.ABORT_ERR
 PASS event.target.error.name is 'AbortError'
 PASS trans.error is null
 PASS firstError is false
@@ -30,9 +23,8 @@ PASS secondError is false
 PASS abortFired is false
 Expecting exception from store.add({x: 'value4', y: 'zzz4'}, 'key4')
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.TRANSACTION_INACTIVE_ERR
+PASS code is 0
 PASS ename is 'TransactionInactiveError'
-PASS event.target.errorCode is DOMException.ABORT_ERR
 PASS event.target.error.name is 'AbortError'
 PASS trans.error is null
 PASS firstError is true
@@ -44,7 +36,7 @@ PASS abortFired is false
 PASS trans.error is null
 Expecting exception from store.add({x: 'value5', y: 'zzz5'}, 'key5')
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.TRANSACTION_INACTIVE_ERR
+PASS code is 0
 PASS ename is 'TransactionInactiveError'
 Expecting exception from trans.abort()
 PASS Exception was thrown.

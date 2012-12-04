@@ -11,47 +11,27 @@ if (this.importScripts) {
 
 description("Test IndexedDB's readonly transactions");
 
-function test()
+indexedDBTest(prepareDatabase, setVersionComplete);
+function prepareDatabase()
 {
-    removeVendorPrefixes();
-
-    name = self.location.pathname;
-    request = evalAndLog("indexedDB.open(name)");
-    request.onsuccess = openSuccess;
-    request.onerror = unexpectedErrorCallback;
-}
-
-function openSuccess()
-{
-    db = evalAndLog("db = event.target.result");
-
-    request = evalAndLog("request = db.setVersion('1')");
-    request.onsuccess = cleanDatabase;
-    request.onerror = unexpectedErrorCallback;
-}
-
-function cleanDatabase()
-{
-    deleteAllObjectStores(db);
+    db = event.target.result;
+    event.target.transaction.onabort = unexpectedAbortCallback;
 
     osName = "test store";
     objectStore = evalAndLog("objectStore = db.createObjectStore(osName, { autoIncrement: true });");
-    event.target.result.oncomplete = setVersionComplete;
 }
 
 function setVersionComplete()
 {
-    evalAndExpectException("db.transaction([osName]).objectStore(osName).add({});", "IDBDatabaseException.READ_ONLY_ERR");
-    evalAndExpectException("db.transaction(osName).objectStore(osName).add({});", "IDBDatabaseException.READ_ONLY_ERR");
+    evalAndExpectException("db.transaction([osName]).objectStore(osName).add({});", "0", "'ReadOnlyError'");
+    evalAndExpectException("db.transaction(osName).objectStore(osName).add({});", "0", "'ReadOnlyError'");
     key1 = evalAndLog("key1 = 1;");
     key2 = evalAndLog("key2 = 2;");
-    evalAndExpectException("db.transaction([osName]).objectStore(osName).put({}, key1);", "IDBDatabaseException.READ_ONLY_ERR");
-    evalAndExpectException("db.transaction(osName).objectStore(osName).put({}, key2);", "IDBDatabaseException.READ_ONLY_ERR");
-    evalAndExpectException("db.transaction([osName]).objectStore(osName).put({}, key1);", "IDBDatabaseException.READ_ONLY_ERR");
-    evalAndExpectException("db.transaction(osName).objectStore(osName).put({}, key1);", "IDBDatabaseException.READ_ONLY_ERR");
-    evalAndExpectException("db.transaction([osName]).objectStore(osName).delete(key1);", "IDBDatabaseException.READ_ONLY_ERR");
-    evalAndExpectException("db.transaction(osName).objectStore(osName).delete(key2);", "IDBDatabaseException.READ_ONLY_ERR");
+    evalAndExpectException("db.transaction([osName]).objectStore(osName).put({}, key1);", "0", "'ReadOnlyError'");
+    evalAndExpectException("db.transaction(osName).objectStore(osName).put({}, key2);", "0", "'ReadOnlyError'");
+    evalAndExpectException("db.transaction([osName]).objectStore(osName).put({}, key1);", "0", "'ReadOnlyError'");
+    evalAndExpectException("db.transaction(osName).objectStore(osName).put({}, key1);", "0", "'ReadOnlyError'");
+    evalAndExpectException("db.transaction([osName]).objectStore(osName).delete(key1);", "0", "'ReadOnlyError'");
+    evalAndExpectException("db.transaction(osName).objectStore(osName).delete(key2);", "0", "'ReadOnlyError'");
     finishJSTest();
 }
-
-test();

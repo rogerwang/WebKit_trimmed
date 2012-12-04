@@ -28,7 +28,6 @@
 
 #include "BidiResolver.h"
 #include "BitmapImage.h"
-#include "Font.h"
 #include "Generator.h"
 #include "ImageBuffer.h"
 #include "IntRect.h"
@@ -256,6 +255,16 @@ bool GraphicsContext::shouldSmoothFonts() const
     return m_state.shouldSmoothFonts;
 }
 
+void GraphicsContext::setShouldSubpixelQuantizeFonts(bool b)
+{
+    m_state.shouldSubpixelQuantizeFonts = b;
+}
+
+bool GraphicsContext::shouldSubpixelQuantizeFonts() const
+{
+    return m_state.shouldSubpixelQuantizeFonts;
+}
+
 const GraphicsContextState& GraphicsContext::state() const
 {
     return m_state;
@@ -394,7 +403,7 @@ void GraphicsContext::drawEmphasisMarks(const Font& font, const TextRun& run, co
     font.drawEmphasisMarks(this, run, mark, point, from, to);
 }
 
-void GraphicsContext::drawBidiText(const Font& font, const TextRun& run, const FloatPoint& point)
+void GraphicsContext::drawBidiText(const Font& font, const TextRun& run, const FloatPoint& point, Font::CustomFontNotReadyAction customFontNotReadyAction)
 {
     if (paintingDisabled())
         return;
@@ -418,7 +427,7 @@ void GraphicsContext::drawBidiText(const Font& font, const TextRun& run, const F
         subrun.setDirection(isRTL ? RTL : LTR);
         subrun.setDirectionalOverride(bidiRun->dirOverride(false));
 
-        font.drawText(this, subrun, currPoint);
+        font.drawText(this, subrun, currPoint, 0, -1, customFontNotReadyAction);
 
         bidiRun = bidiRun->next();
         // FIXME: Have Font::drawText return the width of what it drew so that we don't have to re-measure here.

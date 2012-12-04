@@ -157,6 +157,14 @@ public:
         // Left/right modifiers for keyboard events.
         IsLeft           = 1 << 11,
         IsRight          = 1 << 12,
+
+        // Last input event to be sent for the current vsync interval. If this
+        // flag is set, the sender guarantees that no more input events will be
+        // delivered until the next vsync and the receiver can schedule
+        // rendering accordingly. If it isn't set, the receiver should not make
+        // any assumptions about the delivery times of future input events
+        // w.r.t. vsync.
+        IsLastInputEventForCurrentVSync = 1 << 13,
     };
 
     static const int InputModifiers = ShiftKey | ControlKey | AltKey | MetaKey;
@@ -379,6 +387,7 @@ public:
     int y;
     int globalX;
     int globalY;
+    SourceDevice sourceDevice;
 
     union {
         struct {
@@ -412,6 +421,7 @@ public:
         struct {
             float velocityX;
             float velocityY;
+            // FIXME: Remove this when Chromium uses the top-level field.
             SourceDevice sourceDevice;
         } flingStart;
 

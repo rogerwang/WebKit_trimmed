@@ -5,33 +5,11 @@ if (this.importScripts) {
 
 description("Test IndexedDB's IDBObjectStore auto-increment feature.");
 
-function test()
+indexedDBTest(prepareDatabase, setVersionCompleted);
+function prepareDatabase()
 {
-    removeVendorPrefixes();
-    request = evalAndLog("indexedDB.open('objectstore-autoincrement')");
-    request.onsuccess = openSuccess;
-    request.onerror = unexpectedErrorCallback;
-}
-
-function openSuccess()
-{
-    debug("openSuccess():");
-    self.db = evalAndLog("db = event.target.result");
-
-    request = evalAndLog("db.setVersion('new version')");
-    request.onsuccess = setVersionSuccess;
-    request.onerror = unexpectedErrorCallback;
-}
-
-function setVersionSuccess()
-{
-    debug("setVersionSuccess():");
-    self.trans = evalAndLog("trans = event.target.result");
-    shouldBeNonNull("trans");
-    trans.onabort = unexpectedAbortCallback;
-    trans.oncomplete = setVersionCompleted;
-
-    deleteAllObjectStores(db);
+    db = event.target.result;
+    event.target.transaction.onabort = unexpectedAbortCallback;
 
     debug("createObjectStore():");
     self.store = evalAndLog("store = db.createObjectStore('StoreWithKeyPath', {keyPath: 'id', autoIncrement: true})");
@@ -46,8 +24,6 @@ function setVersionSuccess()
     shouldBe("storeNames.contains('StoreWithAutoIncrement')", "true");
     shouldBe("storeNames.contains('PlainOldStore')", "true");
     shouldBe("storeNames.length", "4");
-
-    // Let the setVersion transaction complete.
 }
 
 function setVersionCompleted()
@@ -140,7 +116,7 @@ function getAbrahamSuccess()
 
     self.store = evalAndLog("store = trans.objectStore('PlainOldStore')");
     debug("Try adding with no key to object store without auto increment.");
-    evalAndExpectException("store.add({name: 'Adam'})", "IDBDatabaseException.DATA_ERR", "'DataError'");
+    evalAndExpectException("store.add({name: 'Adam'})", "0", "'DataError'");
     request = evalAndLog("store.add({name: 'Adam'}, 1)");
     request.onsuccess = addAdamSuccess;
     request.onerror = unexpectedErrorCallback;
@@ -189,5 +165,3 @@ function testLongKeyPath()
         cursor.continue();
     };
 }
-
-test();

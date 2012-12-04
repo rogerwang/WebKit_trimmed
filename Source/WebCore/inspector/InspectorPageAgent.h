@@ -109,6 +109,8 @@ public:
     virtual void canOverrideDeviceMetrics(ErrorString*, bool*);
     virtual void setDeviceMetricsOverride(ErrorString*, int width, int height, double fontScaleFactor, bool fitWindow);
     virtual void setShowPaintRects(ErrorString*, bool show);
+    virtual void canShowFPSCounter(ErrorString*, bool*);
+    virtual void setShowFPSCounter(ErrorString*, bool show);
     virtual void getScriptExecutionStatus(ErrorString*, PageCommandHandler::Result::Enum*);
     virtual void setScriptExecutionDisabled(ErrorString*, bool);
     virtual void setGeolocationOverride(ErrorString*, const double*, const double*, const double*);
@@ -139,11 +141,14 @@ public:
     void didPaint(GraphicsContext*, const LayoutRect&);
     void didLayout();
     void didScroll();
+    void didRecalculateStyle();
 
     // Inspector Controller API
     virtual void setFrontend(InspectorFrontend*);
     virtual void clearFrontend();
     virtual void restore();
+
+    void webViewResized(const IntSize&);
 
     // Cross-agents API
     Frame* mainFrame();
@@ -178,7 +183,8 @@ private:
     HashMap<Frame*, String> m_frameToIdentifier;
     HashMap<String, Frame*> m_identifierToFrame;
     HashMap<DocumentLoader*, String> m_loaderToIdentifier;
-    bool m_didLoadEventFire;
+    bool m_enabled;
+    bool m_isFirstLayoutAfterOnLoad;
     bool m_geolocationOverridden;
     RefPtr<GeolocationPosition> m_geolocationPosition;
     RefPtr<GeolocationPosition> m_platformGeolocationPosition;

@@ -190,7 +190,9 @@ void RenderView::layout()
     m_layoutState = &state;
 
     m_layoutPhase = RenderViewNormalLayout;
-    bool needsTwoPassLayoutForAutoLogicalHeightRegions = hasRenderNamedFlowThreads() && flowThreadController()->hasAutoLogicalHeightRegions();
+    bool needsTwoPassLayoutForAutoLogicalHeightRegions = hasRenderNamedFlowThreads()
+        && flowThreadController()->hasAutoLogicalHeightRegions()
+        && flowThreadController()->hasRenderNamedFlowThreadsNeedingLayout();
 
     if (needsTwoPassLayoutForAutoLogicalHeightRegions)
         flowThreadController()->resetRegionsOverrideLogicalContentHeight();
@@ -435,8 +437,20 @@ void RenderView::repaintRectangleInViewAndCompositedLayers(const LayoutRect& ur,
     repaintViewRectangle(ur, immediate);
     
 #if USE(ACCELERATED_COMPOSITING)
+    if (compositor()->inCompositingMode()) {
+        IntRect repaintRect = pixelSnappedIntRect(ur);
+        compositor()->repaintCompositedLayers(&repaintRect);
+    }
+#endif
+}
+
+void RenderView::repaintViewAndCompositedLayers()
+{
+    repaint();
+    
+#if USE(ACCELERATED_COMPOSITING)
     if (compositor()->inCompositingMode())
-        compositor()->repaintCompositedLayersAbsoluteRect(pixelSnappedIntRect(ur));
+        compositor()->repaintCompositedLayers();
 #endif
 }
 

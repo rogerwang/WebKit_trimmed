@@ -58,9 +58,9 @@ struct StringHash;
 
 // Declarations of string operations
 
-int charactersToIntStrict(const LChar*, size_t, bool* ok = 0, int base = 10);
+WTF_EXPORT_STRING_API int charactersToIntStrict(const LChar*, size_t, bool* ok = 0, int base = 10);
 WTF_EXPORT_STRING_API int charactersToIntStrict(const UChar*, size_t, bool* ok = 0, int base = 10);
-unsigned charactersToUIntStrict(const LChar*, size_t, bool* ok = 0, int base = 10);
+WTF_EXPORT_STRING_API unsigned charactersToUIntStrict(const LChar*, size_t, bool* ok = 0, int base = 10);
 WTF_EXPORT_STRING_API unsigned charactersToUIntStrict(const UChar*, size_t, bool* ok = 0, int base = 10);
 int64_t charactersToInt64Strict(const LChar*, size_t, bool* ok = 0, int base = 10);
 int64_t charactersToInt64Strict(const UChar*, size_t, bool* ok = 0, int base = 10);
@@ -211,7 +211,14 @@ public:
 
     WTF_EXPORT_STRING_API CString ascii() const;
     WTF_EXPORT_STRING_API CString latin1() const;
-    WTF_EXPORT_STRING_API CString utf8(bool strict = false) const;
+
+    typedef enum {
+        LenientConversion,
+        StrictConversion,
+        StrictConversionReplacingUnpairedSurrogatesWithFFFD,
+    } ConversionMode;
+
+    WTF_EXPORT_STRING_API CString utf8(ConversionMode = LenientConversion) const;
 
     UChar operator[](unsigned index) const
     {
@@ -409,9 +416,9 @@ public:
 #endif
 
 #if PLATFORM(QT)
-    String(const QString&);
-    String(const QStringRef&);
-    operator QString() const;
+    WTF_EXPORT_STRING_API String(const QString&);
+    WTF_EXPORT_STRING_API String(const QStringRef&);
+    WTF_EXPORT_STRING_API operator QString() const;
 #endif
 
 #if PLATFORM(WX)

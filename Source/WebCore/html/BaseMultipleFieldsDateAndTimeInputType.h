@@ -35,13 +35,14 @@
 
 #if ENABLE(INPUT_MULTIPLE_FIELDS_UI)
 #include "DateTimeEditElement.h"
+#include "PickerIndicatorElement.h"
 #include "SpinButtonElement.h"
 
 namespace WebCore {
 
-class PickerIndicatorElement;
+struct DateTimeChooserParameters;
 
-class BaseMultipleFieldsDateAndTimeInputType : public BaseDateAndTimeInputType, protected DateTimeEditElement::EditControlOwner {
+class BaseMultipleFieldsDateAndTimeInputType : public BaseDateAndTimeInputType, protected DateTimeEditElement::EditControlOwner, protected PickerIndicatorElement::PickerIndicatorOwner {
 protected:
     BaseMultipleFieldsDateAndTimeInputType(HTMLInputElement*);
     virtual ~BaseMultipleFieldsDateAndTimeInputType();
@@ -66,7 +67,13 @@ private:
     virtual void spinButtonStepDown() OVERRIDE;
     virtual void spinButtonStepUp() OVERRIDE;
 
+    // PickerIndicatorElement::PickerIndicatorOwner functions
+    virtual bool isPickerIndicatorOwnerDisabledOrReadOnly() const OVERRIDE FINAL;
+    virtual void pickerIndicatorChooseValue(const String&) OVERRIDE FINAL;
+    virtual bool setupDateTimeChooserParameters(DateTimeChooserParameters&) OVERRIDE FINAL;
+
     // InputType functions
+    virtual String badInputText() const OVERRIDE;
     virtual void blur() OVERRIDE FINAL;
     virtual RenderObject* createRenderer(RenderArena*, RenderStyle*) const OVERRIDE FINAL;
     virtual void createShadowSubtree() OVERRIDE FINAL;
@@ -75,6 +82,7 @@ private:
     virtual void focus(bool restorePreviousSelection) OVERRIDE FINAL;
     virtual void forwardEvent(Event*) OVERRIDE FINAL;
     virtual void handleKeydownEvent(KeyboardEvent*) OVERRIDE FINAL;
+    virtual bool hasBadInput() const OVERRIDE;
     virtual bool hasCustomFocusLogic() const OVERRIDE FINAL;
     virtual bool isKeyboardFocusable(KeyboardEvent*) const OVERRIDE FINAL;
     virtual bool isMouseFocusable() const OVERRIDE FINAL;

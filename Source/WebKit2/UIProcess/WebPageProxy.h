@@ -404,9 +404,12 @@ public:
     CGContextRef containingWindowGraphicsContext();
     bool shouldDelayWindowOrderingForEvent(const WebMouseEvent&);
     bool acceptsFirstMouse(int eventNumber, const WebMouseEvent&);
-    
+
+    void setAcceleratedCompositingRootLayer(const WebCore::GraphicsLayer*);
+
 #if USE(APPKIT)
     WKView* wkView() const;
+    void intrinsicContentSizeDidChange(const WebCore::IntSize& intrinsicContentSize);
 #endif
 #endif
 #if PLATFORM(WIN)
@@ -721,6 +724,7 @@ public:
     static WebCore::Color backingStoreUpdatesFlashColor();
 
     void saveDataToFileInDownloadsFolder(const String& suggestedFilename, const String& mimeType, const String& originatingURLString, WebData*);
+    void savePDFToFileInDownloadsFolder(const String& suggestedFilename, const String& originatingURLString, const CoreIPC::DataReference&);
 
     void linkClicked(const String&, const WebMouseEvent&);
 
@@ -733,6 +737,7 @@ public:
     void printMainFrame();
     
     void setMediaVolume(float);
+    void setMayStartMediaWhenInWindow(bool);
 
     // WebPopupMenuProxy::Client
     virtual NativeWebMouseEvent* currentlyProcessedMouseDownEvent();
@@ -750,6 +755,11 @@ public:
     void setColorChooserColor(const WebCore::Color&);
     void endColorChooser();
 #endif
+
+    const WebLoaderClient& loaderClient() { return m_loaderClient; }
+
+    double minimumLayoutWidth() const { return m_minimumLayoutWidth; }
+    void setMinimumLayoutWidth(double);
 
 private:
     WebPageProxy(PageClient*, PassRefPtr<WebProcessProxy>, WebPageGroup*, uint64_t pageID);
@@ -889,6 +899,9 @@ private:
 #endif
 
     void editorStateChanged(const EditorState&);
+#if PLATFORM(QT)
+    void willSetInputMethodState();
+#endif
 
     // Back/Forward list management
     void backForwardAddItem(uint64_t itemID);
@@ -945,7 +958,7 @@ private:
     void searchWithSpotlight(const String&);
 
     // Dictionary.
-    void didPerformDictionaryLookup(const String&, const DictionaryPopupInfo&);
+    void didPerformDictionaryLookup(const AttributedString&, const DictionaryPopupInfo&);
 #endif
 
     // Spelling and grammar.
@@ -1233,8 +1246,10 @@ private:
     bool m_shouldSendEventsSynchronously;
 
     bool m_suppressVisibilityUpdates;
+    float m_minimumLayoutWidth;
 
     float m_mediaVolume;
+    bool m_mayStartMediaWhenInWindow;
 
 #if PLATFORM(QT)
     WTF::HashSet<RefPtr<QtRefCountedNetworkRequestData> > m_applicationSchemeRequests;

@@ -4,7 +4,7 @@
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
 # met:
-# 
+#
 #     * Redistributions of source code must retain the above copyright
 # notice, this list of conditions and the following disclaimer.
 #     * Redistributions in binary form must reproduce the above
@@ -14,7 +14,7 @@
 #     * Neither the name of Google Inc. nor the names of its
 # contributors may be used to endorse or promote products derived from
 # this software without specific prior written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 # "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 # LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -28,6 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import codecs
+import logging
 import os
 import sys
 import time
@@ -41,7 +42,6 @@ from webkitpy.common.config.committervalidator import CommitterValidator
 from webkitpy.common.config.ports import DeprecatedPort
 from webkitpy.common.net.bugzilla import Attachment
 from webkitpy.common.net.statusserver import StatusServer
-from webkitpy.common.system.deprecated_logging import error, log
 from webkitpy.common.system.executive import ScriptError
 from webkitpy.tool.bot.botinfo import BotInfo
 from webkitpy.tool.bot.commitqueuetask import CommitQueueTask, CommitQueueTaskDelegate
@@ -54,6 +54,8 @@ from webkitpy.tool.bot.queueengine import QueueEngine, QueueEngineDelegate
 from webkitpy.tool.bot.stylequeuetask import StyleQueueTask, StyleQueueTaskDelegate
 from webkitpy.tool.commands.stepsequence import StepSequenceErrorHandler
 from webkitpy.tool.multicommandtool import Command, TryAgain
+
+_log = logging.getLogger(__name__)
 
 
 class AbstractQueue(Command, QueueEngineDelegate):
@@ -78,7 +80,7 @@ class AbstractQueue(Command, QueueEngineDelegate):
             self._tool.bugs.add_cc_to_bug(bug_id, self.watchers)
         except Exception, e:
             traceback.print_exc()
-            log("Failed to CC watchers.")
+            _log.error("Failed to CC watchers.")
 
     def run_webkit_patch(self, args):
         webkit_patch_args = [self._tool.path()]
@@ -111,12 +113,13 @@ class AbstractQueue(Command, QueueEngineDelegate):
         raise NotImplementedError, "subclasses must implement"
 
     def begin_work_queue(self):
-        log("CAUTION: %s will discard all local changes in \"%s\"" % (self.name, self._tool.scm().checkout_root))
+        _log.info("CAUTION: %s will discard all local changes in \"%s\"" % (self.name, self._tool.scm().checkout_root))
         if self._options.confirm:
             response = self._tool.user.prompt("Are you sure?  Type \"yes\" to continue: ")
             if (response != "yes"):
-                error("User declined.")
-        log("Running WebKit %s." % self.name)
+                _log.error("User declined.")
+                sys.exit(1)
+        _log.info("Running WebKit %s." % self.name)
         self._tool.status_server.update_status(self.name, "Starting Queue")
 
     def stop_work_queue(self, reason):
@@ -193,7 +196,7 @@ class FeederQueue(AbstractQueue):
         return None
 
     def handle_unexpected_error(self, work_item, message):
-        log(message)
+        _log.error(message)
 
 
 class AbstractPatchQueue(AbstractQueue):
@@ -352,11 +355,12 @@ class CommitQueue(AbstractPatchQueue, StepSequenceErrorHandler, CommitQueueTaskD
 
     # StepSequenceErrorHandler methods
 
+    @classmethod
     def handle_script_error(cls, tool, state, script_error):
         # Hitting this error handler should be pretty rare.  It does occur,
         # however, when a patch no longer applies to top-of-tree in the final
         # land step.
-        log(script_error.message_with_output())
+        _log.error(script_error.message_with_output())
 
     @classmethod
     def handle_checkout_needs_update(cls, tool, state, options, error):
@@ -404,13 +408,13 @@ class AbstractReviewQueue(AbstractPatchQueue, StepSequenceErrorHandler):
             raise e
 
     def handle_unexpected_error(self, patch, message):
-        log(message)
+        _log.error(message)
 
     # StepSequenceErrorHandler methods
 
     @classmethod
     def handle_script_error(cls, tool, state, script_error):
-        log(script_error.output)
+        _log.error(script_error.output)
 
 
 class StyleQueue(AbstractReviewQueue, StyleQueueTaskDelegate):

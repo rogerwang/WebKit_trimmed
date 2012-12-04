@@ -40,6 +40,7 @@
 #import "WebPageMessages.h"
 #import "WebProcessProxy.h"
 #import <WebCore/DictationAlternative.h>
+#import <WebCore/GraphicsLayer.h>
 #import <WebCore/SharedBuffer.h>
 #import <WebCore/TextAlternativeWithRange.h>
 #import <WebKitSystemInterface.h>
@@ -399,9 +400,9 @@ void WebPageProxy::setSmartInsertDeleteEnabled(bool isSmartInsertDeleteEnabled)
     process()->send(Messages::WebPage::SetSmartInsertDeleteEnabled(isSmartInsertDeleteEnabled), m_pageID);
 }
 
-void WebPageProxy::didPerformDictionaryLookup(const String& text, const DictionaryPopupInfo& dictionaryPopupInfo)
+void WebPageProxy::didPerformDictionaryLookup(const AttributedString& text, const DictionaryPopupInfo& dictionaryPopupInfo)
 {
-    m_pageClient->didPerformDictionaryLookup(text, m_pageScaleFactor, dictionaryPopupInfo);
+    m_pageClient->didPerformDictionaryLookup(text, dictionaryPopupInfo);
 }
     
 void WebPageProxy::registerWebProcessAccessibilityToken(const CoreIPC::DataReference& data)
@@ -471,6 +472,16 @@ bool WebPageProxy::acceptsFirstMouse(int eventNumber, const WebKit::WebMouseEven
 WKView* WebPageProxy::wkView() const
 {
     return m_pageClient->wkView();
+}
+
+void WebPageProxy::intrinsicContentSizeDidChange(const IntSize& intrinsicContentSize)
+{
+    m_pageClient->intrinsicContentSizeDidChange(intrinsicContentSize);
+}
+
+void WebPageProxy::setAcceleratedCompositingRootLayer(const GraphicsLayer* rootLayer)
+{
+    m_pageClient->setAcceleratedCompositingRootLayer(rootLayer->platformLayer());
 }
 
 } // namespace WebKit

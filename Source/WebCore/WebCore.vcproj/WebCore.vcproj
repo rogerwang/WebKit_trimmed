@@ -3674,6 +3674,62 @@
 				>
 			</File>
 			<File
+				RelativePath="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\JSDOMNamedFlowCollection.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug_Cairo_CFLite|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release_Cairo_CFLite|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug_All|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Production|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\JSDOMNamedFlowCollection.h"
+				>
+			</File>
+			<File
 				RelativePath="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\JSDOMParser.cpp"
 				>
 				<FileConfiguration
@@ -6931,6 +6987,62 @@
 			</File>
 			<File
 				RelativePath="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\JSHTMLFieldSetElement.h"
+				>
+			</File>
+			<File
+				RelativePath="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\JSHTMLFormControlsCollection.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug_Cairo_CFLite|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release_Cairo_CFLite|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug_All|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Production|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\JSHTMLFormControlsCollection.h"
 				>
 			</File>
 			<File
@@ -11314,62 +11426,6 @@
 				>
 			</File>
 			<File
-				RelativePath="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\JSMicroDataItemValue.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug_Cairo_CFLite|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release_Cairo_CFLite|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug_All|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Production|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\JSMicroDataItemValue.h"
-				>
-			</File>
-			<File
 				RelativePath="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\JSMetadata.cpp"
 				>
 				<FileConfiguration
@@ -11479,6 +11535,62 @@
 			</File>
 			<File
 				RelativePath="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\JSMetadataCallback.h"
+				>
+			</File>
+			<File
+				RelativePath="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\JSMicroDataItemValue.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug_Cairo_CFLite|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release_Cairo_CFLite|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug_All|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Production|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\JSMicroDataItemValue.h"
 				>
 			</File>
 			<File
@@ -22225,7 +22337,6 @@
 				RelativePath="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\JSSVGZoomAndPan.h"
 				>
 			</File>
-
 			<File
 				RelativePath="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\JSSVGZoomEvent.cpp"
 				>
@@ -23067,6 +23178,62 @@
 				>
 			</File>
 			<File
+				RelativePath="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\JSWebKitCSSMixFunctionValue.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug_Cairo_CFLite|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release_Cairo_CFLite|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug_All|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Production|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\JSWebKitCSSMixFunctionValue.h"
+				>
+			</File>
+			<File
 				RelativePath="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\JSWebKitCSSRegionRule.cpp"
 				>
 				<FileConfiguration
@@ -23232,62 +23399,6 @@
 			</File>
 			<File
 				RelativePath="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\JSWebKitNamedFlow.h"
-				>
-			</File>
-			<File
-				RelativePath="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\JSDOMNamedFlowCollection.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug_Cairo_CFLite|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release_Cairo_CFLite|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug_All|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Production|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\JSDOMNamedFlowCollection.h"
 				>
 			</File>
 			<File
@@ -26151,62 +26262,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\accessibility\AccessibilitySVGRoot.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug_Cairo_CFLite|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release_Cairo_CFLite|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug_All|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Production|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\accessibility\AccessibilitySVGRoot.h"
-				>
-			</File>
-			<File
 				RelativePath="..\accessibility\AccessibilityScrollbar.cpp"
 				>
 				<FileConfiguration
@@ -26380,6 +26435,62 @@
 			</File>
 			<File
 				RelativePath="..\accessibility\AccessibilitySpinButton.h"
+				>
+			</File>
+			<File
+				RelativePath="..\accessibility\AccessibilitySVGRoot.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug_Cairo_CFLite|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release_Cairo_CFLite|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug_All|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Production|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\accessibility\AccessibilitySVGRoot.h"
 				>
 			</File>
 			<File
@@ -26851,6 +26962,18 @@
 				>
 			</File>
 			<File
+				RelativePath="..\page\DeviceClient.h"
+				>
+			</File>
+			<File
+				RelativePath="..\page\DeviceController.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\page\DeviceController.h"
+				>
+			</File>
+			<File
 				RelativePath="..\page\DiagnosticLoggingKeys.cpp"
 				>
 			</File>
@@ -27168,6 +27291,10 @@
 			</File>
 			<File
 				RelativePath="..\page\PerformanceTiming.h"
+				>
+			</File>
+			<File
+				RelativePath="..\page\PoppupOpeningObserver.h"
 				>
 			</File>
 			<File
@@ -27516,6 +27643,10 @@
 			</File>
 			<File
 				RelativePath="..\loader\FrameLoaderTypes.h"
+				>
+			</File>
+			<File
+				RelativePath="..\loader\FrameLoadRequest.cpp"
 				>
 			</File>
 			<File
@@ -28170,6 +28301,14 @@
 					>
 				</File>
 				<File
+					RelativePath="..\loader\cache\CachedResourceRequestInitiators.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\loader\cache\CachedResourceRequestInitiators.h"
+					>
+				</File>
+				<File
 					RelativePath="..\loader\cache\CachedScript.cpp"
 					>
 				</File>
@@ -28195,6 +28334,10 @@
 				</File>
 				<File
 					RelativePath="..\loader\cache\CachedSVGDocument.h"
+					>
+				</File>
+				<File
+					RelativePath="..\loader\cache\CachedSVGDocumentReference.h"
 					>
 				</File>
 				<File
@@ -28403,10 +28546,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\platform\LayoutUnit.h"
-				>
-			</File>
-			<File
 				RelativePath="..\platform\HistogramSupport.cpp"
 				>
 			</File>
@@ -28452,6 +28591,10 @@
 			</File>
 			<File
 				RelativePath="..\platform\LayoutTestSupport.h"
+				>
+			</File>
+			<File
+				RelativePath="..\platform\LayoutUnit.h"
 				>
 			</File>
 			<File
@@ -29490,30 +29633,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\platform\graphics\LayoutBoxExtent.h"
-					>
-				</File>
-				<File
-					RelativePath="..\platform\graphics\LayoutBoxExtent.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\platform\graphics\LayoutPoint.h"
-					>
-				</File>
-				<File
-					RelativePath="..\platform\graphics\LayoutRect.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\platform\graphics\LayoutRect.h"
-					>
-				</File>
-				<File
-					RelativePath="..\platform\graphics\LayoutSize.h"
-					>
-				</File>
-				<File
 					RelativePath="..\platform\graphics\GeneratedImage.cpp"
 					>
 				</File>
@@ -29586,11 +29705,11 @@
 					>
 				</File>
 				<File
-					RelativePath="..\platform\graphics\GraphicsLayerUpdater.h"
+					RelativePath="..\platform\graphics\GraphicsLayerUpdater.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\platform\graphics\GraphicsLayerUpdater.cpp"
+					RelativePath="..\platform\graphics\GraphicsLayerUpdater.h"
 					>
 				</File>
 				<File
@@ -29698,6 +29817,30 @@
 					>
 				</File>
 				<File
+					RelativePath="..\platform\graphics\LayoutBoxExtent.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\platform\graphics\LayoutBoxExtent.h"
+					>
+				</File>
+				<File
+					RelativePath="..\platform\graphics\LayoutPoint.h"
+					>
+				</File>
+				<File
+					RelativePath="..\platform\graphics\LayoutRect.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\platform\graphics\LayoutRect.h"
+					>
+				</File>
+				<File
+					RelativePath="..\platform\graphics\LayoutSize.h"
+					>
+				</File>
+				<File
 					RelativePath="..\platform\graphics\MediaPlayer.cpp"
 					>
 				</File>
@@ -29705,7 +29848,7 @@
 					RelativePath="..\platform\graphics\MediaPlayer.h"
 					>
 				</File>
- 				<File
+				<File
 					RelativePath="..\platform\graphics\NativeImagePtr.h"
 					>
 				</File>
@@ -31833,6 +31976,14 @@
 						>
 					</File>
 					<File
+						RelativePath="..\platform\graphics\filters\CustomFilterCompiledProgram.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\platform\graphics\filters\CustomFilterCompiledProgram.h"
+						>
+					</File>
+					<File
 						RelativePath="..\platform\graphics\filters\CustomFilterConstants.h"
 						>
 					</File>
@@ -31865,23 +32016,11 @@
 						>
 					</File>
 					<File
-						RelativePath="..\platform\graphics\filters\CustomFilterTransformParameter.h"
-						>
-					</File>
-					<File
 						RelativePath="..\platform\graphics\filters\CustomFilterOperation.cpp"
 						>
 					</File>
 					<File
 						RelativePath="..\platform\graphics\filters\CustomFilterOperation.h"
-						>
-					</File>
-					<File
-						RelativePath="..\platform\graphics\filters\ValidatedCustomFilterOperation.cpp"
-						>
-					</File>
-					<File
-						RelativePath="..\platform\graphics\filters\ValidatedCustomFilterOperation.h"
 						>
 					</File>
 					<File
@@ -31905,15 +32044,15 @@
 						>
 					</File>
 					<File
+						RelativePath="..\platform\graphics\filters\CustomFilterProgramClient.h"
+						>
+					</File>
+					<File
 						RelativePath="..\platform\graphics\filters\CustomFilterProgramInfo.cpp"
 						>
 					</File>
 					<File
 						RelativePath="..\platform\graphics\filters\CustomFilterProgramInfo.h"
-						>
-					</File>
-					<File
-						RelativePath="..\platform\graphics\filters\CustomFilterProgramClient.h"
 						>
 					</File>
 					<File
@@ -31925,11 +32064,7 @@
 						>
 					</File>
 					<File
-						RelativePath="..\platform\graphics\filters\CustomFilterCompiledProgram.cpp"
-						>
-					</File>
-					<File
-						RelativePath="..\platform\graphics\filters\CustomFilterCompiledProgram.h"
+						RelativePath="..\platform\graphics\filters\CustomFilterTransformParameter.h"
 						>
 					</File>
 					<File
@@ -31957,7 +32092,7 @@
 						>
 					</File>
 					<File
-						RelativePath="..\platform\graphics\filters\arm\FEBlendNEON.h"
+						RelativePath="..\platform\graphics\cpu\arm\filters\FEBlendNEON.h"
 						>
 					</File>
 					<File
@@ -31985,7 +32120,7 @@
 						>
 					</File>
 					<File
-						RelativePath="..\platform\graphics\filters\arm\FECompositeArithmeticNEON.h"
+						RelativePath="..\platform\graphics\cpu\arm\filters\FECompositeArithmeticNEON.h"
 						>
 					</File>
 					<File
@@ -32045,7 +32180,7 @@
 						>
 					</File>
 					<File
-						RelativePath="..\platform\graphics\filters\arm\FEGaussianBlurNEON.h"
+						RelativePath="..\platform\graphics\cpu\arm\filters\FEGaussianBlurNEON.h"
 						>
 					</File>
 					<File
@@ -32057,11 +32192,11 @@
 						>
 					</File>
 					<File
-						RelativePath="..\platform\graphics\filters\arm\FELightingNEON.cpp"
+						RelativePath="..\platform\graphics\cpu\arm\filters\FELightingNEON.cpp"
 						>
 					</File>
 					<File
-						RelativePath="..\platform\graphics\filters\arm\FELightingNEON.h"
+						RelativePath="..\platform\graphics\cpu\arm\filters\FELightingNEON.h"
 						>
 					</File>
 					<File
@@ -32149,7 +32284,7 @@
 						>
 					</File>
 					<File
-						RelativePath="..\platform\graphics\filters\arm\NEONHelpers.h"
+						RelativePath="..\platform\graphics\cpu\arm\filters\NEONHelpers.h"
 						>
 					</File>
 					<File
@@ -32182,6 +32317,14 @@
 					</File>
 					<File
 						RelativePath="..\platform\graphics\filters\SpotLightSource.h"
+						>
+					</File>
+					<File
+						RelativePath="..\platform\graphics\filters\ValidatedCustomFilterOperation.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\platform\graphics\filters\ValidatedCustomFilterOperation.h"
 						>
 					</File>
 				</Filter>
@@ -33830,10 +33973,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\platform\text\TextBreakIterator.h"
-					>
-				</File>
-				<File
 					RelativePath="..\platform\text\TextBreakIterator.cpp"
 					>
 					<FileConfiguration
@@ -33852,6 +33991,10 @@
 							Name="VCCLCompilerTool"
 						/>
 					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\platform\text\TextBreakIterator.h"
+					>
 				</File>
 				<File
 					RelativePath="..\platform\text\TextBreakIteratorICU.cpp"
@@ -34146,10 +34289,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\platform\text\WritingMode.h"
-					>
-				</File>
-				<File
 					RelativePath="..\platform\graphics\WidthCache.h"
 					>
 				</File>
@@ -34159,6 +34298,10 @@
 				</File>
 				<File
 					RelativePath="..\platform\graphics\WidthIterator.h"
+					>
+				</File>
+				<File
+					RelativePath="..\platform\text\WritingMode.h"
 					>
 				</File>
 				<Filter
@@ -35043,6 +35186,14 @@
 			Name="css"
 			>
 			<File
+				RelativePath="..\css\BasicShapeFunctions.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\css\BasicShapeFunctions.h"
+				>
+			</File>
+			<File
 				RelativePath="..\css\Counter.h"
 				>
 			</File>
@@ -35104,6 +35255,62 @@
 			</File>
 			<File
 				RelativePath="..\css\CSSAspectRatioValue.h"
+				>
+			</File>
+			<File
+				RelativePath="..\css\CSSBasicShapes.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug_Cairo_CFLite|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release_Cairo_CFLite|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug_All|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Production|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\css\CSSBasicShapes.h"
 				>
 			</File>
 			<File
@@ -37363,62 +37570,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\css\CSSBasicShapes.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug_Cairo_CFLite|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release_Cairo_CFLite|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug_All|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Production|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\css\CSSBasicShapes.h"
-				>
-			</File>
-			<File
 				RelativePath="..\css\DashboardRegion.h"
 				>
 			</File>
@@ -37794,7 +37945,7 @@
 				RelativePath="..\css\StyleBuilder.h"
 				>
 			</File>
-            <File
+			<File
 				RelativePath="..\css\StyleInvalidationAnalysis.cpp"
 				>
 			</File>
@@ -37986,7 +38137,7 @@
 				RelativePath="..\css\StyleRule.h"
 				>
 			</File>
-            <File
+			<File
 				RelativePath="..\css\StyleRuleImport.cpp"
 				>
 			</File>
@@ -38028,6 +38179,14 @@
 			</File>
 			<File
 				RelativePath="..\css\SVGCSSStyleSelector.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\css\ViewportStyleResolver.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\css\ViewportStyleResolver.h"
 				>
 			</File>
 			<File
@@ -38087,19 +38246,19 @@
 				>
 			</File>
 			<File
-				RelativePath="..\css\WebKitCSSSVGDocumentValue.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\css\WebKitCSSSVGDocumentValue.h"
-				>
-			</File>
-			<File
 				RelativePath="..\css\WebKitCSSShaderValue.cpp"
 				>
 			</File>
 			<File
 				RelativePath="..\css\WebKitCSSShaderValue.h"
+				>
+			</File>
+			<File
+				RelativePath="..\css\WebKitCSSSVGDocumentValue.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\css\WebKitCSSSVGDocumentValue.h"
 				>
 			</File>
 			<File
@@ -38111,20 +38270,12 @@
 				>
 			</File>
 			<File
-			    RelativePath="..\css\BasicShapeFunctions.cpp"
-			    >
-			</File>
-			<File
 				RelativePath="..\css\WebKitCSSViewportRule.cpp"
 				>
 			</File>
 			<File
 				RelativePath="..\css\WebKitCSSViewportRule.h"
 				>
-			</File>
-			<File
-			    RelativePath="..\css\BasicShapeFunctions.h"
-			    >
 			</File>
 		</Filter>
 		<Filter
@@ -38410,44 +38561,44 @@
 				RelativePath="..\rendering\EllipsisBox.h"
 				>
 			</File>
-                        <File
-                                RelativePath="..\rendering\ExclusionInterval.cpp"
-                                >
-                        </File>
-                        <File
-                                RelativePath="..\rendering\ExclusionInterval.h"
-                                >
-                        </File>
-                        <File
-                                RelativePath="..\rendering\ExclusionPolygon.cpp"
-                                >
-                        </File>
-                        <File
-                                RelativePath="..\rendering\ExclusionPolygon.h"
-                                >
-                        </File>
-                        <File
-                                RelativePath="..\rendering\ExclusionRectangle.cpp"
-                                >
-                        </File>
-                        <File
-                                RelativePath="..\rendering\ExclusionSRectangle.h"
-                                >
-                        </File>
-                        <File
-                                RelativePath="..\rendering\ExclusionShape.cpp"
-                                >
-                        </File>
-                        <File
-                                RelativePath="..\rendering\ExclusionShape.h"
-                                >
-                        </File>
+			<File
+				RelativePath="..\rendering\ExclusionInterval.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\rendering\ExclusionInterval.h"
+				>
+			</File>
+			<File
+				RelativePath="..\rendering\ExclusionPolygon.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\rendering\ExclusionPolygon.h"
+				>
+			</File>
+			<File
+				RelativePath="..\rendering\ExclusionRectangle.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\rendering\ExclusionShape.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\rendering\ExclusionShape.h"
+				>
+			</File>
 			<File
 				RelativePath="..\rendering\ExclusionShapeInsideInfo.cpp"
 				>
 			</File>
 			<File
 				RelativePath="..\rendering\ExclusionShapeInsideInfo.h"
+				>
+			</File>
+			<File
+				RelativePath="..\rendering\ExclusionSRectangle.h"
 				>
 			</File>
 			<File
@@ -40130,7 +40281,7 @@
 				RelativePath="..\rendering\RenderGeometryMap.h"
 				>
 			</File>
-                        <File
+			<File
 				RelativePath="..\rendering\RenderGrid.cpp"
 				>
 			</File>
@@ -40604,6 +40755,62 @@
 			</File>
 			<File
 				RelativePath="..\rendering\RenderLayerFilterInfo.h"
+				>
+			</File>
+			<File
+				RelativePath="..\rendering\RenderLayerModelObject.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug_Cairo_CFLite|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release_Cairo_CFLite|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug_All|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Production|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\rendering\RenderLayerModelObject.h"
 				>
 			</File>
 			<File
@@ -44265,62 +44472,6 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\rendering\RenderLayerModelObject.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug_Cairo_CFLite|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release_Cairo_CFLite|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-				Name="Debug_All|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Production|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\rendering\RenderLayerModelObject.h"
-				>
-			</File>
-			<File
 				RelativePath="..\rendering\RenderTreeAsText.cpp"
 				>
 				<FileConfiguration
@@ -45204,11 +45355,23 @@
 				Name="style"
 				>
 				<File
+					RelativePath="..\rendering\style\BasicShapes.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\rendering\style\BasicShapes.h"
+					>
+				</File>
+				<File
 					RelativePath="..\rendering\style\BorderData.h"
 					>
 				</File>
 				<File
 					RelativePath="..\rendering\style\BorderValue.h"
+					>
+				</File>
+				<File
+					RelativePath="..\rendering\style\ClipPathOperation.h"
 					>
 				</File>
 				<File
@@ -45344,6 +45507,10 @@
 					>
 				</File>
 				<File
+				    RelativePath="..\rendering\style\ExclusionShapeValue.h"
+				    >
+				</File>
+				<File
 					RelativePath="..\rendering\style\FillLayer.cpp"
 					>
 					<FileConfiguration
@@ -45397,6 +45564,10 @@
 				</File>
 				<File
 					RelativePath="..\rendering\style\FillLayer.h"
+					>
+				</File>
+				<File
+					RelativePath="..\rendering\style\GridPosition.h"
 					>
 				</File>
 				<File
@@ -46620,6 +46791,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\rendering\style\StyleVariableData.h"
+					>
+				</File>
+				<File
 					RelativePath="..\rendering\style\StyleVisualData.cpp"
 					>
 					<FileConfiguration
@@ -46672,11 +46847,11 @@
 					</FileConfiguration>
 				</File>
 				<File
-					RelativePath="..\rendering\style\StyleVariableData.h"
+					RelativePath="..\rendering\style\StyleVisualData.h"
 					>
 				</File>
 				<File
-					RelativePath="..\rendering\style\StyleVisualData.h"
+					RelativePath="..\rendering\style\GridTrackSize.h"
 					>
 				</File>
 				<File
@@ -46789,18 +46964,6 @@
 				</File>
 				<File
 					RelativePath="..\rendering\style\SVGRenderStyleDefs.h"
-					>
-				</File>
-				<File
-					RelativePath="..\rendering\style\BasicShapes.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\rendering\style\BasicShapes.h"
-					>
-				</File>
-				<File
-					RelativePath="..\rendering\style\ClipPathOperation.h"
 					>
 				</File>
 			</Filter>
@@ -50117,7 +50280,7 @@
 			<File
 				RelativePath="..\dom\DeviceOrientationData.h"
 				>
-			</File>	
+			</File>
 			<File
 				RelativePath="..\dom\DeviceOrientationEvent.cpp"
 				>
@@ -50510,11 +50673,19 @@
 				RelativePath="..\dom\DocumentParser.h"
 				>
 			</File>
-            <File
+			<File
+				RelativePath="..\dom\DocumentSharedObjectPool.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\dom\DocumentSharedObjectPool.h"
+				>
+			</File>
+			<File
 				RelativePath="..\dom\DocumentStyleSheetCollection.cpp"
 				>
 			</File>
-            <File
+			<File
 				RelativePath="..\dom\DocumentStyleSheetCollection.h"
 				>
 			</File>
@@ -50751,6 +50922,62 @@
 				>
 			</File>
 			<File
+				RelativePath="..\dom\DOMNamedFlowCollection.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug_Cairo_CFLite|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release_Cairo_CFLite|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug_All|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Production|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\dom\DOMNamedFlowCollection.h"
+				>
+			</File>
+			<File
 				RelativePath="..\dom\DOMStringList.cpp"
 				>
 				<FileConfiguration
@@ -50922,63 +51149,7 @@
 				RelativePath="..\dom\DynamicNodeList.h"
 				>
 			</File>
-			<File
-				RelativePath="..\dom\EditingText.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug_Cairo_CFLite|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release_Cairo_CFLite|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug_All|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Production|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\dom\EditingText.h"
-				>
-			</File>
-			<File
+            <File
 				RelativePath="..\dom\Element.cpp"
 				>
 				<FileConfiguration
@@ -52743,6 +52914,62 @@
 				>
 			</File>
 			<File
+				RelativePath="..\dom\NamedFlowCollection.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug_Cairo_CFLite|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release_Cairo_CFLite|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug_All|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Production|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\dom\NamedFlowCollection.h"
+				>
+			</File>
+			<File
 				RelativePath="..\dom\NamedNodeMap.cpp"
 				>
 			</File>
@@ -52812,10 +53039,6 @@
 			</File>
 			<File
 				RelativePath="..\dom\Node.h"
-				>
-			</File>
-			<File
-				RelativePath="..\dom\NodeRareData.cpp"
 				>
 			</File>
 			<File
@@ -52984,6 +53207,10 @@
 			</File>
 			<File
 				RelativePath="..\dom\NodeIterator.h"
+				>
+			</File>
+			<File
+				RelativePath="..\dom\NodeRareData.cpp"
 				>
 			</File>
 			<File
@@ -54195,6 +54422,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\dom\SimulatedClickOptions.h"
+				>
+			</File>
+			<File
 				RelativePath="..\dom\SpaceSplitString.cpp"
 				>
 				<FileConfiguration
@@ -55267,6 +55498,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\dom\WebCoreMemoryInstrumentation.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\dom\WebCoreMemoryInstrumentation.h"
+				>
+			</File>
+			<File
 				RelativePath="..\dom\WebKitAnimationEvent.cpp"
 				>
 				<FileConfiguration
@@ -55376,126 +55615,6 @@
 			</File>
 			<File
 				RelativePath="..\dom\WebKitNamedFlow.h"
-				>
-			</File>
-		    <File
-				RelativePath="..\dom\NamedFlowCollection.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug_Cairo_CFLite|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release_Cairo_CFLite|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug_All|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Production|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\dom\NamedFlowCollection.h"
-				>
-			</File>
-			<File
-				RelativePath="..\dom\DOMNamedFlowCollection.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug_Cairo_CFLite|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release_Cairo_CFLite|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug_All|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Production|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\dom\DOMNamedFlowCollection.h"
-				>
-			</File>
-			<File
-				RelativePath="..\dom\WebCoreMemoryInstrumentation.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\dom\WebCoreMemoryInstrumentation.h"
 				>
 			</File>
 			<File
@@ -60483,11 +60602,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\html\HTMLFormCollection.cpp"
+				RelativePath="..\html\HTMLFormControlsCollection.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\html\HTMLFormCollection.h"
+				RelativePath="..\html\HTMLFormControlsCollection.h"
 				>
 			</File>
 			<File
@@ -63669,7 +63788,7 @@
 			<File
 				RelativePath="..\html\InputType.h"
 				>
-			</File>  
+			</File>
 			<File
 				RelativePath="..\html\InputTypeNames.cpp"
 				>
@@ -63882,6 +64001,14 @@
 				RelativePath="..\html\TimeRanges.h"
 				>
 			</File>
+  		<File
+  			RelativePath="..\html\TypeAhead.cpp"
+  			>
+  		</File>
+  		<File
+  			RelativePath="..\html\TypeAhead.h"
+  			>
+  		</File>
 			<File
 				RelativePath="..\html\URLInputType.cpp"
 				>
@@ -64274,19 +64401,19 @@
 					>
 				</File>
 				<File
-					RelativePath="..\html\shadow\InsertionPoint.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\html\shadow\InsertionPoint.h"
-					>
-				</File>
-				<File
 					RelativePath="..\html\shadow\ImageInnerElement.cpp"
 					>
 				</File>
 				<File
 					RelativePath="..\html\shadow\ImageInnerElement.h"
+					>
+				</File>
+				<File
+					RelativePath="..\html\shadow\InsertionPoint.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\html\shadow\InsertionPoint.h"
 					>
 				</File>
 				<File
@@ -64298,19 +64425,19 @@
 					>
 				</File>
 				<File
-					RelativePath="..\html\shadow\MediaControlRootElement.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\html\shadow\MediaControlRootElement.h"
-					>
-				</File>
-				<File
 					RelativePath="..\html\shadow\MediaControls.cpp"
 					>
 				</File>
 				<File
 					RelativePath="..\html\shadow\MediaControls.h"
+					>
+				</File>
+				<File
+					RelativePath="..\html\shadow\MediaControlsApple.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\html\shadow\MediaControlsApple.h"
 					>
 				</File>
 				<File
@@ -64331,6 +64458,14 @@
 				</File>
 				<File
 					RelativePath="..\html\shadow\ProgressShadowElement.h"
+					>
+				</File>
+				<File
+					RelativePath="..\html\shadow\SelectRuleFeatureSet.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\html\shadow\SelectRuleFeatureSet.h"
 					>
 				</File>
 				<File
@@ -64405,8 +64540,8 @@
 			<Filter
 				Name="js"
 				>
-                                <File
-                                        RelativePath="..\bindings\js\ArrayValue.cpp"
+				<File
+					RelativePath="..\bindings\js\ArrayValue.cpp"
 					>
 					<FileConfiguration
 						Name="Debug|Win32"
@@ -64458,7 +64593,63 @@
 					</FileConfiguration>
 				</File>
 				<File
-                                        RelativePath="..\bindings\js\ArrayValue.h"
+					RelativePath="..\bindings\js\ArrayValue.h"
+					>
+				</File>
+				<File
+					RelativePath="..\bindings\js\BindingState.cpp"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug_Cairo_CFLite|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release_Cairo_CFLite|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug_All|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Production|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\bindings\js\BindingState.h"
 					>
 				</File>
 				<File
@@ -64516,62 +64707,6 @@
 							Name="VCCLCompilerTool"
 						/>
 					</FileConfiguration>
-				</File>
-				<File
-					RelativePath="..\bindings\js\BindingState.cpp"
-					>
-					<FileConfiguration
-						Name="Debug|Win32"
-						ExcludedFromBuild="true"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|Win32"
-						ExcludedFromBuild="true"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Debug_Cairo_CFLite|Win32"
-						ExcludedFromBuild="true"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release_Cairo_CFLite|Win32"
-						ExcludedFromBuild="true"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Debug_All|Win32"
-						ExcludedFromBuild="true"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Production|Win32"
-						ExcludedFromBuild="true"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-						/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath="..\bindings\js\BindingState.h"
-					>
 				</File>
 				<File
 					RelativePath="..\bindings\js\CallbackFunction.h"
@@ -65974,10 +66109,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\bindings\js\JSDependentRetained.h"
-					>
-				</File>
-				<File
 					RelativePath="..\bindings\js\JSDedicatedWorkerContextCustom.cpp"
 					>
 					<FileConfiguration
@@ -66028,6 +66159,10 @@
 							Name="VCCLCompilerTool"
 						/>
 					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\bindings\js\JSDependentRetained.h"
+					>
 				</File>
 				<File
 					RelativePath="..\bindings\js\JSDesktopNotificationsCustom.cpp"
@@ -68022,6 +68157,58 @@
 					>
 				</File>
 				<File
+					RelativePath="..\bindings\js\JSHTMLFormControlsCollectionCustom.cpp"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug_Cairo_CFLite|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release_Cairo_CFLite|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug_All|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Production|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
 					RelativePath="..\bindings\js\JSHTMLFormElementCustom.cpp"
 					>
 					<FileConfiguration
@@ -69943,58 +70130,6 @@
 				</File>
 				<File
 					RelativePath="..\bindings\js\JSRequestAnimationFrameCallbackCustom.cpp"
-					>
-					<FileConfiguration
-						Name="Debug|Win32"
-						ExcludedFromBuild="true"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|Win32"
-						ExcludedFromBuild="true"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Debug_Cairo_CFLite|Win32"
-						ExcludedFromBuild="true"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release_Cairo_CFLite|Win32"
-						ExcludedFromBuild="true"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Debug_All|Win32"
-						ExcludedFromBuild="true"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Production|Win32"
-						ExcludedFromBuild="true"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-						/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath="..\bindings\js\JSScriptProfileNodeCustom.cpp"
 					>
 					<FileConfiguration
 						Name="Debug|Win32"
@@ -72311,10 +72446,6 @@
 				</File>
 				<File
 					RelativePath="..\bindings\scripts\IDLParser.pm"
-					>
-				</File>
-				<File
-					RelativePath="..\bindings\scripts\IDLStructure.pm"
 					>
 				</File>
 				<File
@@ -75942,6 +76073,18 @@
 					>
 				</File>
 				<File
+					RelativePath="..\inspector\front-end\cm\cmdevtools.css"
+					>
+				</File>
+				<File
+					RelativePath="..\inspector\front-end\cm\codemirror.css"
+					>
+				</File>
+				<File
+					RelativePath="..\inspector\front-end\cm\codemirror.js"
+					>
+				</File>
+				<File
 					RelativePath="..\inspector\front-end\CodeMirrorTextEditor.js"
 					>
 				</File>
@@ -75998,6 +76141,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\inspector\front-end\cm\css.js"
+					>
+				</File>
+				<File
 					RelativePath="..\inspector\front-end\CSSCompletions.js"
 					>
 				</File>
@@ -76010,11 +76157,11 @@
 					>
 				</File>
 				<File
-					RelativePath="..\inspector\front-end\CSSNamedFlowView.js"
+					RelativePath="..\inspector\front-end\cssNamedFlows.css"
 					>
 				</File>
 				<File
-					RelativePath="..\inspector\front-end\cssNamedFlows.css"
+					RelativePath="..\inspector\front-end\CSSNamedFlowView.js"
 					>
 				</File>
 				<File
@@ -76023,34 +76170,6 @@
 				</File>
 				<File
 					RelativePath="..\inspector\front-end\CSSStyleModel.js"
-					>
-				</File>
-				<File
-					RelativePath="..\inspector\front-end\cm\cmdevtools.css"
-					>
-				</File>
-				<File
-					RelativePath="..\inspector\front-end\cm\codemirror.css"
-					>
-				</File>
-				<File
-					RelativePath="..\inspector\front-end\cm\codemirror.js"
-					>
-				</File>
-				<File
-					RelativePath="..\inspector\front-end\cm\css.js"
-					>
-				</File>
-				<File
-					RelativePath="..\inspector\front-end\cm\htmlmixed.js"
-					>
-				</File>
-				<File
-					RelativePath="..\inspector\front-end\cm\javascript.js"
-					>
-				</File>
-				<File
-					RelativePath="..\inspector\front-end\cm\xml.js"
 					>
 				</File>
 				<File
@@ -76098,6 +76217,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\inspector\front-end\DockController.js"
+					>
+				</File>
+				<File
 					RelativePath="..\inspector\front-end\DOMAgent.js"
 					>
 				</File>
@@ -76123,10 +76246,6 @@
 				</File>
 				<File
 					RelativePath="..\inspector\front-end\DOMSyntaxHighlighter.js"
-					>
-				</File>
-				<File
-					RelativePath="..\inspector\front-end\DockController.js"
 					>
 				</File>
 				<File
@@ -76270,6 +76389,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\inspector\front-end\cm\htmlmixed.js"
+					>
+				</File>
+				<File
 					RelativePath="..\inspector\front-end\ImageView.js"
 					>
 				</File>
@@ -76322,6 +76445,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\inspector\front-end\cm\javascript.js"
+					>
+				</File>
+				<File
 					RelativePath="..\inspector\front-end\JavaScriptFormatter.js"
 					>
 				</File>
@@ -76354,19 +76481,19 @@
 					>
 				</File>
 				<File
-					RelativePath="..\inspector\front-end\NavigatorOverlayController.js"
-					>
-				</File>
-				<File
 					RelativePath="..\inspector\front-end\nativeMemoryProfiler.css"
 					>
 				</File>
 				<File
-					RelativePath="..\inspector\front-end\navigatorView.css"
+					RelativePath="..\inspector\front-end\NativeMemorySnapshotView.js"
 					>
 				</File>
 				<File
-					RelativePath="..\inspector\front-end\NativeMemorySnapshotView.js"
+					RelativePath="..\inspector\front-end\NavigatorOverlayController.js"
+					>
+				</File>
+				<File
+					RelativePath="..\inspector\front-end\navigatorView.css"
 					>
 				</File>
 				<File
@@ -76426,11 +76553,11 @@
 					>
 				</File>
 				<File
-					RelativePath="..\inspector\front-end\Panel.js"
+					RelativePath="..\inspector\front-end\OverridesView.js"
 					>
 				</File>
 				<File
-					RelativePath="..\inspector\front-end\ParsedURL.js"
+					RelativePath="..\inspector\front-end\Panel.js"
 					>
 				</File>
 				<File
@@ -76443,6 +76570,10 @@
 				</File>
 				<File
 					RelativePath="..\inspector\front-end\UglifyJS\parse-js.js"
+					>
+				</File>
+				<File
+					RelativePath="..\inspector\front-end\ParsedURL.js"
 					>
 				</File>
 				<File
@@ -76554,10 +76685,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\inspector\front-end\RuntimeModel.js"
-					>
-				</File>
-				<File
 					RelativePath="..\inspector\front-end\resourceView.css"
 					>
 				</File>
@@ -76575,6 +76702,10 @@
 				</File>
 				<File
 					RelativePath="..\inspector\front-end\RevisionHistoryView.js"
+					>
+				</File>
+				<File
+					RelativePath="..\inspector\front-end\RuntimeModel.js"
 					>
 				</File>
 				<File
@@ -76662,6 +76793,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\inspector\front-end\SidebarView.js"
+					>
+				</File>
+				<File
 					RelativePath="..\inspector\front-end\SnippetJavaScriptSourceFrame.js"
 					>
 				</File>
@@ -76698,19 +76833,15 @@
 					>
 				</File>
 				<File
-					RelativePath="..\inspector\front-end\Spectrum.js"
-					>
-				</File>
-				<File
 					RelativePath="..\inspector\front-end\spectrum.css"
 					>
 				</File>
 				<File
-					RelativePath="..\inspector\front-end\splitView.css"
+					RelativePath="..\inspector\front-end\Spectrum.js"
 					>
 				</File>
 				<File
-					RelativePath="..\inspector\front-end\SidebarView.js"
+					RelativePath="..\inspector\front-end\splitView.css"
 					>
 				</File>
 				<File
@@ -76806,6 +76937,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\inspector\front-end\TimelinePanelDescriptor.js"
+					>
+				</File>
+				<File
 					RelativePath="..\inspector\front-end\TimelinePresentationModel.js"
 					>
 				</File>
@@ -76863,6 +76998,10 @@
 				</File>
 				<File
 					RelativePath="..\inspector\front-end\Workspace.js"
+					>
+				</File>
+				<File
+					RelativePath="..\inspector\front-end\cm\xml.js"
 					>
 				</File>
 			</Filter>

@@ -45,7 +45,7 @@ static v8::Handle<v8::Value> methodCallback(const v8::Arguments& args)
     if (args.Length() < 1)
         return throwNotEnoughArgumentsError(args.GetIsolate());
     TestMediaQueryListListener* imp = V8TestMediaQueryListListener::toNative(args.Holder());
-    EXCEPTION_BLOCK(RefPtr<MediaQueryListListener>, listener, MediaQueryListListener::create(MAYBE_MISSING_PARAMETER(args, 0, DefaultIsUndefined)));
+    V8TRYCATCH(RefPtr<MediaQueryListListener>, listener, MediaQueryListListener::create(MAYBE_MISSING_PARAMETER(args, 0, DefaultIsUndefined)));
     imp->method(listener);
     return v8Undefined();
 }
@@ -109,32 +109,17 @@ bool V8TestMediaQueryListListener::HasInstance(v8::Handle<v8::Value> value)
 }
 
 
-v8::Handle<v8::Object> V8TestMediaQueryListListener::wrapSlow(PassRefPtr<TestMediaQueryListListener> impl, v8::Handle<v8::Object> creationContext, v8::Isolate* isolate)
+v8::Handle<v8::Object> V8TestMediaQueryListListener::createWrapper(PassRefPtr<TestMediaQueryListListener> impl, v8::Handle<v8::Object> creationContext, v8::Isolate* isolate)
 {
-    v8::Handle<v8::Object> wrapper;
-    // Please don't add any more uses of this variable.
-    Document* deprecatedDocument = 0;
-    UNUSED_PARAM(deprecatedDocument);
+    ASSERT(impl.get());
+    ASSERT(DOMDataStore::current(isolate)->get(impl.get()).IsEmpty());
 
-    v8::Handle<v8::Context> context;
-    if (!creationContext.IsEmpty() && creationContext->CreationContext() != v8::Context::GetCurrent()) {
-        // For performance, we enter the context only if the currently running context
-        // is different from the context that we are about to enter.
-        context = v8::Local<v8::Context>::New(creationContext->CreationContext());
-        ASSERT(!context.IsEmpty());
-        context->Enter();
-    }
-
-    wrapper = V8DOMWrapper::instantiateV8Object(deprecatedDocument, &info, impl.get());
-
-    if (!context.IsEmpty())
-        context->Exit();
-
+    v8::Handle<v8::Object> wrapper = V8DOMWrapper::instantiateV8Object(creationContext, &info, impl.get());
     if (UNLIKELY(wrapper.IsEmpty()))
         return wrapper;
 
     installPerContextProperties(wrapper, impl.get());
-    v8::Persistent<v8::Object> wrapperHandle = V8DOMWrapper::setJSWrapperForDOMObject(impl, wrapper, isolate);
+    v8::Persistent<v8::Object> wrapperHandle = V8DOMWrapper::createDOMWrapper(impl, &info, wrapper, isolate);
     if (!hasDependentLifetime)
         wrapperHandle.MarkIndependent();
     return wrapper;

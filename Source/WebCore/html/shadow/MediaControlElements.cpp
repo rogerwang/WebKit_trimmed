@@ -36,6 +36,7 @@
 #include "CSSValueKeywords.h"
 #include "DOMTokenList.h"
 #include "EventNames.h"
+#include "EventTarget.h"
 #include "FloatConversion.h"
 #include "FloatPoint.h"
 #include "Frame.h"
@@ -43,9 +44,9 @@
 #include "HTMLMediaElement.h"
 #include "HTMLNames.h"
 #include "HTMLVideoElement.h"
+#include "Language.h"
 #include "LayoutRepainter.h"
 #include "LocalizedStrings.h"
-#include "MediaControlRootElement.h"
 #include "MediaControls.h"
 #include "MouseEvent.h"
 #include "Page.h"
@@ -62,6 +63,10 @@
 #include "Settings.h"
 #include "StyleResolver.h"
 #include "Text.h"
+#if ENABLE(VIDEO_TRACK)
+#include "TextTrack.h"
+#include "TextTrackList.h"
+#endif
 
 namespace WebCore {
 
@@ -73,6 +78,11 @@ static const float cSkipRepeatDelay = 0.1f;
 static const float cSkipTime = 0.2f;
 static const float cScanRepeatDelay = 1.5f;
 static const float cScanMaximumRate = 8;
+
+#if ENABLE(VIDEO_TRACK)
+static const char* textTracksOffAttrValue = "-1"; // This must match HTMLMediaElement::textTracksOffIndex()
+static const int textTracksIndexNotFound = -2;
+#endif
 
 HTMLMediaElement* toParentMediaElement(Node* node)
 {
@@ -96,6 +106,26 @@ MediaControlElementType mediaControlElementType(Node* node)
     return static_cast<MediaControlElement*>(element)->displayType();
 }
 
+#if ENABLE(VIDEO_TRACK)
+static const AtomicString& trackIndexAttributeName()
+{
+    DEFINE_STATIC_LOCAL(AtomicString, name, ("x-webkit-track-index", AtomicString::ConstructFromLiteral));
+    return name;
+}
+
+static int trackListIndexForElement(Element* element)
+{
+    const AtomicString trackIndexAttributeValue = element->getAttribute(trackIndexAttributeName());
+    if (trackIndexAttributeValue.isNull() || trackIndexAttributeValue.isEmpty())
+        return textTracksIndexNotFound;
+    bool ok;
+    int trackIndex = trackIndexAttributeValue.toInt(&ok);
+    if (!ok)
+        return textTracksIndexNotFound;
+    return trackIndex;
+}
+#endif
+
 // ----------------------------
 
 MediaControlElement::MediaControlElement(Document* document)
@@ -112,6 +142,14 @@ void MediaControlElement::show()
 void MediaControlElement::hide()
 {
     setInlineStyleProperty(CSSPropertyDisplay, CSSValueNone);
+}
+
+bool MediaControlElement::isShowing() const
+{
+    const StylePropertySet* propertySet = inlineStyle();
+    // Following the code from show() and hide() above, we only have
+    // to check for the presense of inline display.
+    return (!propertySet || !propertySet->getPropertyCSSValue(CSSPropertyDisplay));
 }
 
 // ----------------------------
@@ -851,41 +889,266 @@ const AtomicString& MediaControlReturnToRealtimeButtonElement::shadowPseudoId() 
 
 // ----------------------------
 
-inline MediaControlToggleClosedCaptionsButtonElement::MediaControlToggleClosedCaptionsButtonElement(Document* document)
-    : MediaControlInputElement(document, MediaShowClosedCaptionsButton)
+inline MediaControlClosedCaptionsContainerElement::MediaControlClosedCaptionsContainerElement(Document* document)
+    : MediaControlElement(document)
 {
 }
 
-PassRefPtr<MediaControlToggleClosedCaptionsButtonElement> MediaControlToggleClosedCaptionsButtonElement::create(Document* document)
+PassRefPtr<MediaControlClosedCaptionsContainerElement> MediaControlClosedCaptionsContainerElement::create(Document* document)
 {
-    RefPtr<MediaControlToggleClosedCaptionsButtonElement> button = adoptRef(new MediaControlToggleClosedCaptionsButtonElement(document));
+    RefPtr<MediaControlClosedCaptionsContainerElement> element = adoptRef(new MediaControlClosedCaptionsContainerElement(document));
+    element->hide();
+    return element.release();
+}
+
+const AtomicString& MediaControlClosedCaptionsContainerElement::shadowPseudoId() const
+{
+    DEFINE_STATIC_LOCAL(AtomicString, id, ("-webkit-media-controls-closed-captions-container", AtomicString::ConstructFromLiteral));
+    return id;
+}
+
+// ----------------------------
+
+inline MediaControlToggleClosedCaptionsButtonElement::MediaControlToggleClosedCaptionsButtonElement(Document* document, MediaControls* controls)
+    : MediaControlInputElement(document, MediaShowClosedCaptionsButton)
+#if PLATFORM(MAC)
+    , m_controls(controls)
+#endif
+{
+#if !PLATFORM(MAC)
+    UNUSED_PARAM(controls);
+#endif
+}
+
+PassRefPtr<MediaControlToggleClosedCaptionsButtonElement> MediaControlToggleClosedCaptionsButtonElement::create(Document* document, MediaControls* controls)
+{
+    ASSERT(controls);
+
+    RefPtr<MediaControlToggleClosedCaptionsButtonElement> button = adoptRef(new MediaControlToggleClosedCaptionsButtonElement(document, controls));
     button->createShadowSubtree();
     button->setType("button");
     button->hide();
     return button.release();
 }
 
+void MediaControlToggleClosedCaptionsButtonElement::updateDisplayType()
+{
+    bool captionsVisible = mediaController()->closedCaptionsVisible();
+    setDisplayType(captionsVisible ? MediaHideClosedCaptionsButton : MediaShowClosedCaptionsButton);
+    setChecked(captionsVisible);
+}
+
 void MediaControlToggleClosedCaptionsButtonElement::defaultEventHandler(Event* event)
 {
     if (event->type() == eventNames().clickEvent) {
+        // FIXME: It's not great that the shared code is dictating behavior of platform-specific
+        // UI. Not all ports may want the closed captions button to toggle a list of tracks, so
+        // we have to use #if.
+        // https://bugs.webkit.org/show_bug.cgi?id=101877
+#if !PLATFORM(MAC)
         mediaController()->setClosedCaptionsVisible(!mediaController()->closedCaptionsVisible());
         setChecked(mediaController()->closedCaptionsVisible());
         updateDisplayType();
+#else
+        m_controls->toggleClosedCaptionTrackList();
+#endif
         event->setDefaultHandled();
     }
 
     HTMLInputElement::defaultEventHandler(event);
 }
 
-void MediaControlToggleClosedCaptionsButtonElement::updateDisplayType()
-{
-    setDisplayType(mediaController()->closedCaptionsVisible() ? MediaHideClosedCaptionsButton : MediaShowClosedCaptionsButton);
-}
-
 const AtomicString& MediaControlToggleClosedCaptionsButtonElement::shadowPseudoId() const
 {
     DEFINE_STATIC_LOCAL(AtomicString, id, ("-webkit-media-controls-toggle-closed-captions-button", AtomicString::ConstructFromLiteral));
     return id;
+}
+
+// ----------------------------
+
+inline MediaControlClosedCaptionsTrackListElement::MediaControlClosedCaptionsTrackListElement(Document* document, MediaControls* controls)
+    : MediaControlElement(document)
+    , m_controls(controls)
+{
+}
+
+PassRefPtr<MediaControlClosedCaptionsTrackListElement> MediaControlClosedCaptionsTrackListElement::create(Document* document, MediaControls* controls)
+{
+    ASSERT(controls);
+    RefPtr<MediaControlClosedCaptionsTrackListElement> element = adoptRef(new MediaControlClosedCaptionsTrackListElement(document, controls));
+    return element.release();
+}
+
+void MediaControlClosedCaptionsTrackListElement::defaultEventHandler(Event* event)
+{
+#if ENABLE(VIDEO_TRACK)
+    if (event->type() == eventNames().clickEvent) {
+        // FIXME: Add modifier key for exclusivity override.
+        // http://webkit.org/b/103361
+
+        Node* target = event->target()->toNode();
+        if (!target || !target->isElementNode())
+            return;
+
+        // When we created the elements in the track list, we gave them a custom
+        // attribute representing the index in the HTMLMediaElement's list of tracks.
+        // Check if the event target has such a custom element and, if so,
+        // tell the HTMLMediaElement to enable that track.
+
+        int trackIndex = trackListIndexForElement(toElement(target));
+        if (trackIndex == textTracksIndexNotFound)
+            return;
+        
+        HTMLMediaElement* mediaElement = toParentMediaElement(this);
+        if (!mediaElement)
+            return;
+
+        mediaElement->toggleTrackAtIndex(trackIndex);
+
+        // We've selected a track to display, so we can now close the menu.
+        m_controls->toggleClosedCaptionTrackList();
+        updateDisplay();
+    }
+
+    MediaControlElement::defaultEventHandler(event);
+#endif
+}
+
+const AtomicString& MediaControlClosedCaptionsTrackListElement::shadowPseudoId() const
+{
+    DEFINE_STATIC_LOCAL(AtomicString, id, ("-webkit-media-controls-closed-captions-track-list", AtomicString::ConstructFromLiteral));
+    return id;
+}
+
+void MediaControlClosedCaptionsTrackListElement::updateDisplay()
+{
+#if ENABLE(VIDEO_TRACK)
+    DEFINE_STATIC_LOCAL(AtomicString, selectedClassValue, ("selected", AtomicString::ConstructFromLiteral));
+
+    if (!mediaController()->hasClosedCaptions())
+        return;
+
+    HTMLMediaElement* mediaElement = toParentMediaElement(this);
+    if (!mediaElement)
+        return;
+
+    TextTrackList* trackList = mediaElement->textTracks();
+
+    if (!trackList || !trackList->length())
+        return;
+
+    bool captionsVisible = mediaElement->closedCaptionsVisible();
+    for (unsigned i = 0, length = menuItems.size(); i < length; ++i) {
+        RefPtr<Element> trackItem = menuItems[i];
+        int trackIndex = trackListIndexForElement(trackItem.get());
+        if (trackIndex != textTracksIndexNotFound) {
+            if (trackIndex == HTMLMediaElement::textTracksOffIndex()) {
+                if (captionsVisible)
+                    trackItem->classList()->remove(selectedClassValue, ASSERT_NO_EXCEPTION);
+                else
+                    trackItem->classList()->add(selectedClassValue, ASSERT_NO_EXCEPTION);
+            } else {
+                TextTrack* track = trackList->item(trackIndex);
+                if (!track)
+                    continue;
+                if (track->mode() == TextTrack::showingKeyword())
+                    trackItem->classList()->add(selectedClassValue, ASSERT_NO_EXCEPTION);
+                else
+                    trackItem->classList()->remove(selectedClassValue, ASSERT_NO_EXCEPTION);
+            }
+        }
+    }
+#endif
+}
+
+void MediaControlClosedCaptionsTrackListElement::resetTrackListMenu()
+{
+#if ENABLE(VIDEO_TRACK)
+    // Remove any existing content.
+    removeChildren();
+    menuItems.clear();
+
+    if (!mediaController()->hasClosedCaptions())
+        return;
+
+    HTMLMediaElement* mediaElement = toParentMediaElement(this);
+    if (!mediaElement)
+        return;
+
+    TextTrackList* trackList = mediaElement->textTracks();
+
+    if (!trackList || !trackList->length())
+        return;
+
+    Document* doc = document();
+
+    RefPtr<Element> captionsSection = doc->createElement(sectionTag, ASSERT_NO_EXCEPTION);
+    RefPtr<Element> captionsHeader = doc->createElement(h3Tag, ASSERT_NO_EXCEPTION);
+    captionsHeader->appendChild(doc->createTextNode("Closed Captions"));
+    captionsSection->appendChild(captionsHeader);
+    RefPtr<Element> captionsList = doc->createElement(ulTag, ASSERT_NO_EXCEPTION);
+
+    RefPtr<Element> subtitlesSection = doc->createElement(sectionTag, ASSERT_NO_EXCEPTION);
+    RefPtr<Element> subtitlesHeader = doc->createElement(h3Tag, ASSERT_NO_EXCEPTION);
+    subtitlesHeader->appendChild(doc->createTextNode("Subtitles"));
+    subtitlesSection->appendChild(subtitlesHeader);
+    RefPtr<Element> subtitlesList = doc->createElement(ulTag, ASSERT_NO_EXCEPTION);
+
+    RefPtr<Element> trackItem;
+
+    trackItem = doc->createElement(liTag, ASSERT_NO_EXCEPTION);
+    trackItem->appendChild(doc->createTextNode("Off"));
+    trackItem->setAttribute(trackIndexAttributeName(), textTracksOffAttrValue, ASSERT_NO_EXCEPTION);
+    captionsList->appendChild(trackItem);
+    menuItems.append(trackItem);
+
+    trackItem = doc->createElement(liTag, ASSERT_NO_EXCEPTION);
+    trackItem->appendChild(doc->createTextNode("Off"));
+    trackItem->setAttribute(trackIndexAttributeName(), textTracksOffAttrValue, ASSERT_NO_EXCEPTION);
+    subtitlesList->appendChild(trackItem);
+    menuItems.append(trackItem);
+
+    bool hasCaptions = false;
+    bool hasSubtitles = false;
+
+    for (unsigned i = 0, length = trackList->length(); i < length; ++i) {
+        TextTrack* track = trackList->item(i);
+        trackItem = doc->createElement(liTag, ASSERT_NO_EXCEPTION);
+
+        // Add a custom attribute to the <li> element which will allow
+        // us to easily associate the user tapping here with the
+        // track. Since this list is rebuilt if the tracks change, we
+        // should always be in sync.
+        trackItem->setAttribute(trackIndexAttributeName(), String::number(i), ASSERT_NO_EXCEPTION);
+
+        AtomicString labelText = track->label();
+        if (labelText.isNull() || labelText.isEmpty())
+            labelText = displayNameForLanguageLocale(track->language());
+        if (labelText.isNull() || labelText.isEmpty())
+            labelText = "No Label";
+
+        if (track->kind() == track->captionsKeyword()) {
+            hasCaptions = true;
+            captionsList->appendChild(trackItem);
+        }
+        if (track->kind() == track->subtitlesKeyword()) {
+            hasSubtitles = true;
+            subtitlesList->appendChild(trackItem);
+        }
+        trackItem->appendChild(doc->createTextNode(labelText));
+        menuItems.append(trackItem);
+    }
+
+    captionsSection->appendChild(captionsList);
+    subtitlesSection->appendChild(subtitlesList);
+
+    if (hasCaptions)
+        appendChild(captionsSection);
+    if (hasSubtitles)
+        appendChild(subtitlesSection);
+
+    updateDisplay();
+#endif
 }
 
 // ----------------------------
@@ -935,7 +1198,7 @@ void MediaControlTimelineElement::defaultEventHandler(Event* event)
 
     RenderSlider* slider = toRenderSlider(renderer());
     if (slider && slider->inDragMode())
-        m_controls->updateTimeDisplay();
+        m_controls->updateCurrentTimeDisplay();
 }
 
 bool MediaControlTimelineElement::willRespondToMouseClickEvents()

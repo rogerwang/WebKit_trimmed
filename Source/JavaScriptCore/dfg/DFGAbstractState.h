@@ -180,7 +180,7 @@ public:
     // MergeToSuccessors.
     bool mergeToSuccessors(Graph&, BasicBlock*);
     
-    void dump(FILE* out);
+    void dump(PrintStream& out);
     
 private:
     void clobberWorld(const CodeOrigin&, unsigned indexInBlock);
@@ -234,6 +234,13 @@ private:
         childValue1.filter(SpecNumber);
         childValue2.filter(SpecNumber);
     }
+    
+    enum BooleanResult {
+        UnknownBooleanResult,
+        DefinitelyFalse,
+        DefinitelyTrue
+    };
+    BooleanResult booleanResult(Node&, AbstractValue&);
     
     bool trySetConstant(NodeIndex nodeIndex, JSValue value)
     {

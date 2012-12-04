@@ -38,6 +38,7 @@
 #include "JSFunction.h"
 #include "JSNameScope.h"
 #include "LowLevelInterpreter.h"
+#include "Options.h"
 #include "StrongInlines.h"
 #include <wtf/text/WTFString.h>
 
@@ -145,18 +146,6 @@ void ResolveResult::checkValidity()
     }
 }
 #endif
-
-static bool s_dumpsGeneratedCode = false;
-
-void BytecodeGenerator::setDumpsGeneratedCode(bool dumpsGeneratedCode)
-{
-    s_dumpsGeneratedCode = dumpsGeneratedCode;
-}
-
-bool BytecodeGenerator::dumpsGeneratedCode()
-{
-    return s_dumpsGeneratedCode;
-}
 
 ParserError BytecodeGenerator::generate()
 {
@@ -457,8 +446,16 @@ BytecodeGenerator::BytecodeGenerator(JSGlobalData& globalData, FunctionBodyNode*
 
     if (isConstructor()) {
         prependComment("'this' because we are a Constructor function");
-        emitOpcode(op_create_this);
-        instructions().append(m_thisRegister.index());
+
+        RefPtr<RegisterID> func = newTemporary(); 
+
+        UnlinkedValueProfile profile = emitProfiledOpcode(op_get_callee);
+        instructions().append(func->index());
+        instructions().append(profile);
+
+        emitOpcode(op_create_this); 
+        instructions().append(m_thisRegister.index()); 
+        instructions().append(func->index()); 
     } else if (!codeBlock->isStrictMode() && (functionBody->usesThis() || codeBlock->usesEval() || m_shouldEmitDebugHooks)) {
         UnlinkedValueProfile profile = emitProfiledOpcode(op_convert_this);
         instructions().append(m_thisRegister.index());

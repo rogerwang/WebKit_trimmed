@@ -1,4 +1,3 @@
-CONSOLE MESSAGE: The setVersion() method is non-standard and will be removed. Use the "upgradeneeded" event instead.
 Test that continue() calls against cursors are validated by direction.
 
 On success, you will see a series of "PASS" messages, followed by "TEST COMPLETE".
@@ -6,11 +5,9 @@ On success, you will see a series of "PASS" messages, followed by "TEST COMPLETE
 
 indexedDB = self.indexedDB || self.webkitIndexedDB || self.mozIndexedDB || self.msIndexedDB || self.OIndexedDB;
 
-dbname = self.location.pathname
+dbname = "cursor-continue-dir.html"
 indexedDB.deleteDatabase(dbname)
-request = indexedDB.open(dbname)
-db = request.result
-db.setVersion('1')
+indexedDB.open(dbname)
 store = db.createObjectStore('store')
 store.put(1,1)
 store.put(2,2)
@@ -31,7 +28,7 @@ Expect DataError if: The parameter is less than or equal to this cursor's positi
 PASS cursor.key is 1
 Expecting exception from cursor.continue(-1)
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.DATA_ERR
+PASS code is 0
 PASS ename is 'DataError'
 request = store.openCursor(IDBKeyRange.bound(-Infinity, Infinity), 'prev')
 cursor = request.result
@@ -40,7 +37,7 @@ Expect DataError if: The parameter is greater than or equal to this cursor's pos
 PASS cursor.key is 10
 Expecting exception from cursor.continue(11)
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.DATA_ERR
+PASS code is 0
 PASS ename is 'DataError'
 PASS successfullyParsed is true
 

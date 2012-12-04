@@ -4,7 +4,7 @@
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
 # met:
-# 
+#
 #     * Redistributions of source code must retain the above copyright
 # notice, this list of conditions and the following disclaimer.
 #     * Redistributions in binary form must reproduce the above
@@ -14,7 +14,7 @@
 #     * Neither the name of Google Inc. nor the names of its
 # contributors may be used to endorse or promote products derived from
 # this software without specific prior written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 # "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 # LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -27,6 +27,8 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import logging
+
 from webkitpy.tool import steps
 
 from webkitpy.common.checkout.changelog import ChangeLog
@@ -37,7 +39,8 @@ from webkitpy.tool.commands.stepsequence import StepSequence
 from webkitpy.tool.comments import bug_comment_from_commit_text
 from webkitpy.tool.grammar import pluralize
 from webkitpy.tool.multicommandtool import AbstractDeclarativeCommand
-from webkitpy.common.system.deprecated_logging import error, log
+
+_log = logging.getLogger(__name__)
 
 
 class Clean(AbstractSequencedCommand):
@@ -146,8 +149,10 @@ class AbstractPatchProcessingCommand(AbstractDeclarativeCommand):
     # Subclasses must implement the methods below.  We don't declare them here
     # because we want to be able to implement them with mix-ins.
     #
+    # pylint: disable-msg=E1101
     # def _fetch_list_of_patches_to_process(self, options, args, tool):
     # def _prepare_to_process(self, options, args, tool):
+    # def _process_patch(self, options, args, tool):
 
     @staticmethod
     def _collect_patches_by_bug(patches):
@@ -162,7 +167,7 @@ class AbstractPatchProcessingCommand(AbstractDeclarativeCommand):
 
         # It's nice to print out total statistics.
         bugs_to_patches = self._collect_patches_by_bug(patches)
-        log("Processing %s from %s." % (pluralize("patch", len(patches)), pluralize("bug", len(bugs_to_patches))))
+        _log.info("Processing %s from %s." % (pluralize("patch", len(patches)), pluralize("bug", len(bugs_to_patches))))
 
         for patch in patches:
             self._process_patch(patch, options, args, tool)
@@ -197,13 +202,13 @@ class ProcessBugsMixin(object):
         all_patches = []
         for bug_id in args:
             patches = tool.bugs.fetch_bug(bug_id).reviewed_patches()
-            log("%s found on bug %s." % (pluralize("reviewed patch", len(patches)), bug_id))
+            _log.info("%s found on bug %s." % (pluralize("reviewed patch", len(patches)), bug_id))
             all_patches += patches
         if not all_patches:
-            log("No reviewed patches found, looking for unreviewed patches.")
+            _log.info("No reviewed patches found, looking for unreviewed patches.")
             for bug_id in args:
                 patches = tool.bugs.fetch_bug(bug_id).patches()
-                log("%s found on bug %s." % (pluralize("patch", len(patches)), bug_id))
+                _log.info("%s found on bug %s." % (pluralize("patch", len(patches)), bug_id))
                 all_patches += patches
         return all_patches
 
@@ -215,7 +220,7 @@ class ProcessURLsMixin(object):
             bug_id = urls.parse_bug_id(url)
             if bug_id:
                 patches = tool.bugs.fetch_bug(bug_id).patches()
-                log("%s found on bug %s." % (pluralize("patch", len(patches)), bug_id))
+                _log.info("%s found on bug %s." % (pluralize("patch", len(patches)), bug_id))
                 all_patches += patches
 
             attachment_id = urls.parse_attachment_id(url)
@@ -368,9 +373,9 @@ class AbstractRolloutPrepCommand(AbstractSequencedCommand):
             #       SheriffBot because the SheriffBot just greps the output
             #       of create-rollout for bug URLs.  It should do better
             #       parsing instead.
-            log("Preparing rollout for bug %s." % commit_info.bug_id())
+            _log.info("Preparing rollout for bug %s." % commit_info.bug_id())
         else:
-            log("Unable to parse bug number from diff.")
+            _log.info("Unable to parse bug number from diff.")
         return commit_info
 
     def _prepare_state(self, options, args, tool):

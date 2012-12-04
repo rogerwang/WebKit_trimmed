@@ -1,4 +1,3 @@
-CONSOLE MESSAGE: The setVersion() method is non-standard and will be removed. Use the "upgradeneeded" event instead.
 Test that expected exceptions are thrown per IndexedDB spec.
 
 On success, you will see a series of "PASS" messages, followed by "TEST COMPLETE".
@@ -6,8 +5,24 @@ On success, you will see a series of "PASS" messages, followed by "TEST COMPLETE
 
 indexedDB = self.indexedDB || self.webkitIndexedDB || self.mozIndexedDB || self.msIndexedDB || self.OIndexedDB;
 
-indexedDB.deleteDatabase('exceptions')
-request = indexedDB.open('exceptions')
+dbname = "exceptions.html"
+indexedDB.deleteDatabase(dbname)
+indexedDB.open(dbname)
+store = db.createObjectStore('store')
+index = store.createIndex('index', 'id')
+store.put({id: 'a'}, 1)
+store.put({id: 'b'}, 2)
+store.put({id: 'c'}, 3)
+store.put({id: 'd'}, 4)
+store.put({id: 'e'}, 5)
+store.put({id: 'f'}, 6)
+store.put({id: 'g'}, 7)
+store.put({id: 'h'}, 8)
+store.put({id: 'i'}, 9)
+store.put({id: 'j'}, 10)
+otherStore = db.createObjectStore('otherStore')
+inlineKeyStore = db.createObjectStore('inlineKeyStore', {keyPath: 'id'})
+request = inlineKeyStore.put({id: 0})
 PASS request.readyState is "pending"
 
 3.2.1 The IDBRequest Interface
@@ -32,35 +47,18 @@ IDBFactory.cmp()
 One of the supplied keys was not a valid key.
 Expecting exception from indexedDB.cmp(null, 0)
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.DATA_ERR
+PASS code is 0
 PASS ename is 'DataError'
-
-db = request.result
-db.setVersion('1')
-store = db.createObjectStore('store')
-index = store.createIndex('index', 'id')
-store.put({id: 'a'}, 1)
-store.put({id: 'b'}, 2)
-store.put({id: 'c'}, 3)
-store.put({id: 'd'}, 4)
-store.put({id: 'e'}, 5)
-store.put({id: 'f'}, 6)
-store.put({id: 'g'}, 7)
-store.put({id: 'h'}, 8)
-store.put({id: 'i'}, 9)
-store.put({id: 'j'}, 10)
-otherStore = db.createObjectStore('otherStore')
-inlineKeyStore = db.createObjectStore('inlineKeyStore', {keyPath: 'id'})
-inlineKeyStore.put({id: 0})
+db.close()
 
 3.2.4 Database
-db.setVersion('2')
+indexedDB.open(dbname, 2)
 
 IDBDatabase.createObjectStore()
 If an objectStore with the same name already exists, the implementation must throw a DOMException of type ConstraintError.
 Expecting exception from db.createObjectStore('store')
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.CONSTRAINT_ERR
+PASS code is 0
 PASS ename is 'ConstraintError'
 If keyPath is not a valid key path then a DOMException of type SyntaxError must be thrown.
 Expecting exception from db.createObjectStore('fail', {keyPath: '-invalid-'})
@@ -127,21 +125,21 @@ request = storeFromInactiveTransaction.openCursor()
 cursorFromInactiveTransaction = request.result
 
 3.2.5 Object Store
-storeFromReadOnlyTransaction = db.transaction('store', 'readonly').objectStore('store')
-store = db.transaction('store', 'readwrite').objectStore('store')
+ro_transaction = db.transaction('store', 'readonly')
+storeFromReadOnlyTransaction = ro_transaction.objectStore('store')
+rw_transaction = db.transaction('store', 'readwrite')
+store = rw_transaction.objectStore('store')
 
 IDBObjectStore.add()
-storeFromReadOnlyTransaction = db.transaction('store', 'readonly').objectStore('store')
-store = db.transaction('store', 'readwrite').objectStore('store')
 This method throws a DOMException of type ReadOnlyError if the transaction which this IDBObjectStore belongs to is has its mode set to "readonly".
 Expecting exception from storeFromReadOnlyTransaction.add(0, 0)
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.READ_ONLY_ERR
+PASS code is 0
 PASS ename is 'ReadOnlyError'
 The transaction this IDBObjectStore belongs to is not active.
 Expecting exception from storeFromInactiveTransaction.add(0, 0)
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.TRANSACTION_INACTIVE_ERR
+PASS code is 0
 PASS ename is 'TransactionInactiveError'
 The data being stored could not be cloned by the internal structured cloning algorithm.
 Expecting exception from store.add(self, 0)
@@ -152,53 +150,53 @@ IDBObjectStore.clear()
 This method throws a DOMException of type ReadOnlyError if the transaction which this IDBObjectStore belongs to is has its mode set to "readonly".
 Expecting exception from storeFromReadOnlyTransaction.clear()
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.READ_ONLY_ERR
+PASS code is 0
 PASS ename is 'ReadOnlyError'
 The transaction this IDBObjectStore belongs to is not active.
 Expecting exception from storeFromInactiveTransaction.clear()
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.TRANSACTION_INACTIVE_ERR
+PASS code is 0
 PASS ename is 'TransactionInactiveError'
 
 IDBObjectStore.count()
 If the optional key parameter is not a valid key or a key range, this method throws a DOMException of type DataError.
 Expecting exception from store.count({})
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.DATA_ERR
+PASS code is 0
 PASS ename is 'DataError'
 The transaction this IDBObjectStore belongs to is not active.
 Expecting exception from storeFromInactiveTransaction.count()
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.TRANSACTION_INACTIVE_ERR
+PASS code is 0
 PASS ename is 'TransactionInactiveError'
 
 IDBObjectStore.delete()
 This method throws a DOMException of type ReadOnlyError if the transaction which this IDBObjectStore belongs to is has its mode set to "readonly".
 Expecting exception from storeFromReadOnlyTransaction.delete(0)
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.READ_ONLY_ERR
+PASS code is 0
 PASS ename is 'ReadOnlyError'
 If the key parameter is not a valid key or a key range this method throws a DOMException of type DataError.
 Expecting exception from store.delete({})
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.DATA_ERR
+PASS code is 0
 PASS ename is 'DataError'
 The transaction this IDBObjectStore belongs to is not active.
 Expecting exception from storeFromInactiveTransaction.add(0, 0)
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.TRANSACTION_INACTIVE_ERR
+PASS code is 0
 PASS ename is 'TransactionInactiveError'
 
 IDBObjectStore.get()
 If the key parameter is not a valid key or a key range, this method throws a DOMException of type DataError.
 Expecting exception from store.get({})
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.DATA_ERR
+PASS code is 0
 PASS ename is 'DataError'
 The transaction this IDBObjectStore belongs to is not active.
 Expecting exception from storeFromInactiveTransaction.get(0)
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.TRANSACTION_INACTIVE_ERR
+PASS code is 0
 PASS ename is 'TransactionInactiveError'
 
 IDBObjectStore.index()
@@ -217,12 +215,12 @@ IDBObjectStore.openCursor()
 If the range parameter is specified but is not a valid key or a key range, this method throws a DOMException of type DataError.
 Expecting exception from store.openCursor({})
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.DATA_ERR
+PASS code is 0
 PASS ename is 'DataError'
 The transaction this IDBObjectStore belongs to is not active.
 Expecting exception from storeFromInactiveTransaction.openCursor()
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.TRANSACTION_INACTIVE_ERR
+PASS code is 0
 PASS ename is 'TransactionInactiveError'
 The value for the direction parameter is invalid.
 Expecting TypeError exception from store.openCursor(0, 'invalid-direction')
@@ -233,24 +231,33 @@ IDBObjectStore.put()
 This method throws a DOMException of type ReadOnlyError if the transaction which this IDBObjectStore belongs to is has its mode set to "readonly".
 Expecting exception from storeFromReadOnlyTransaction.put(0, 0)
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.READ_ONLY_ERR
+PASS code is 0
 PASS ename is 'ReadOnlyError'
 The transaction this IDBObjectStore belongs to is not active.
 Expecting exception from storeFromInactiveTransaction.put(0, 0)
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.TRANSACTION_INACTIVE_ERR
+PASS code is 0
 PASS ename is 'TransactionInactiveError'
 The data being stored could not be cloned by the internal structured cloning algorithm.
 Expecting exception from store.put(self, 0)
 PASS Exception was thrown.
 PASS code is DOMException.DATA_CLONE_ERR
-db.setVersion('3')
+db.close()
+ro_transaction.oncomplete = transactionComplete
+rw_transaction.oncomplete = transactionComplete
+
+transactionComplete():
+First transaction completed
+
+transactionComplete():
+request = indexedDB.open(dbname, 3)
+request.onupgradeneeded = onUpgradeNeeded3
 
 IDBObjectStore.createIndex()
 If an index with the same name already exists, the implementation must throw a DOMException of type ConstraintError. 
 Expecting exception from store.createIndex('index', 'keyPath')
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.CONSTRAINT_ERR
+PASS code is 0
 PASS ename is 'ConstraintError'
 If keyPath is not a valid key path then a DOMException of type SyntaxError must be thrown.
 Expecting exception from store.createIndex('fail', '-invalid-')
@@ -292,48 +299,48 @@ IDBIndex.count()
 If the optional key parameter is not a valid key or a key range, this method throws a DOMException of type DataError.
 Expecting exception from index.count({})
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.DATA_ERR
+PASS code is 0
 PASS ename is 'DataError'
 The transaction this IDBIndex belongs to is not active.
 Expecting exception from indexFromInactiveTransaction.count()
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.TRANSACTION_INACTIVE_ERR
+PASS code is 0
 PASS ename is 'TransactionInactiveError'
 
 IDBIndex.get()
 If the key parameter is not a valid key or a key range, this method throws a DOMException of type DataError.
 Expecting exception from index.get({})
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.DATA_ERR
+PASS code is 0
 PASS ename is 'DataError'
 The transaction this IDBIndex belongs to is not active.
 Expecting exception from indexFromInactiveTransaction.get(0)
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.TRANSACTION_INACTIVE_ERR
+PASS code is 0
 PASS ename is 'TransactionInactiveError'
 
 IDBIndex.getKey()
 If the key parameter is not a valid key or a key range, this method throws a DOMException of type DataError.
 Expecting exception from index.getKey({})
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.DATA_ERR
+PASS code is 0
 PASS ename is 'DataError'
 The transaction this IDBIndex belongs to is not active.
 Expecting exception from indexFromInactiveTransaction.getKey(0)
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.TRANSACTION_INACTIVE_ERR
+PASS code is 0
 PASS ename is 'TransactionInactiveError'
 
 IDBIndex.openCursor()
 If the range parameter is specified but is not a valid key or a key range, this method throws a DOMException of type DataError.
 Expecting exception from index.openCursor({})
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.DATA_ERR
+PASS code is 0
 PASS ename is 'DataError'
 The transaction this IDBIndex belongs to is not active.
 Expecting exception from indexFromInactiveTransaction.openCursor()
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.TRANSACTION_INACTIVE_ERR
+PASS code is 0
 PASS ename is 'TransactionInactiveError'
 The value for the direction parameter is invalid.
 Expecting TypeError exception from index.openCursor(0, 'invalid-direction')
@@ -344,12 +351,12 @@ IDBIndex.openKeyCursor()
 If the range parameter is specified but is not a valid key or a key range, this method throws a DOMException of type DataError.
 Expecting exception from index.openKeyCursor({})
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.DATA_ERR
+PASS code is 0
 PASS ename is 'DataError'
 The transaction this IDBIndex belongs to is not active.
 Expecting exception from indexFromInactiveTransaction.openKeyCursor()
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.TRANSACTION_INACTIVE_ERR
+PASS code is 0
 PASS ename is 'TransactionInactiveError'
 The value for the direction parameter is invalid.
 Expecting TypeError exception from index.openKeyCursor(0, 'invalid-direction')
@@ -381,24 +388,24 @@ PASS ename is 'InvalidStateError'
 The transaction this IDBCursor belongs to is not active.
 Expecting exception from cursorFromInactiveTransaction.advance(1)
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.TRANSACTION_INACTIVE_ERR
+PASS code is 0
 PASS ename is 'TransactionInactiveError'
 
 IDBCursor.continue()
 The parameter is not a valid key.
 Expecting exception from cursor.continue({})
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.DATA_ERR
+PASS code is 0
 PASS ename is 'DataError'
 The parameter is less than or equal to this cursor's position and this cursor's direction is "next" or "nextunique".
 Expecting exception from cursor.continue(-Infinity)
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.DATA_ERR
+PASS code is 0
 PASS ename is 'DataError'
 The parameter is greater than or equal to this cursor's position and this cursor's direction is "prev" or "prevunique".
 Expecting exception from reverseCursor.continue(100)
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.DATA_ERR
+PASS code is 0
 PASS ename is 'DataError'
 Calling this method more than once before new cursor data has been loaded is not allowed and results in a DOMException of type InvalidStateError being thrown.
 cursor.continue()
@@ -409,7 +416,7 @@ PASS ename is 'InvalidStateError'
 The transaction this IDBCursor belongs to is not active.
 Expecting exception from cursorFromInactiveTransaction.continue()
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.TRANSACTION_INACTIVE_ERR
+PASS code is 0
 PASS ename is 'TransactionInactiveError'
 
 IDBCursor.delete()
@@ -421,7 +428,7 @@ PASS ename is 'InvalidStateError'
 The transaction this IDBCursor belongs to is not active.
 Expecting exception from cursorFromInactiveTransaction.delete()
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.TRANSACTION_INACTIVE_ERR
+PASS code is 0
 PASS ename is 'TransactionInactiveError'
 
 IDBCursor.update()
@@ -433,7 +440,7 @@ PASS ename is 'InvalidStateError'
 If the effective object store of this cursor uses in-line keys and evaluating the key path of the value parameter results in a different value than the cursor's effective key, this method throws a DOMException of type DataError.
 Expecting exception from inlineCursor.update({id: 1})
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.DATA_ERR
+PASS code is 0
 PASS ename is 'DataError'
 If the structured clone algorithm throws an exception, that exception is rethrown.
 Expecting exception from cursor.update(self)
@@ -442,7 +449,7 @@ PASS code is DOMException.DATA_CLONE_ERR
 The transaction this IDBCursor belongs to is not active.
 Expecting exception from cursorFromInactiveTransaction.update({})
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.TRANSACTION_INACTIVE_ERR
+PASS code is 0
 PASS ename is 'TransactionInactiveError'
 readOnlyTransaction = db.transaction('store', 'readonly')
 request = readOnlyTransaction.objectStore('store').openCursor()
@@ -452,14 +459,14 @@ One more IDBCursor.delete() test:
 This method throws a DOMException of type ReadOnlyError if the transaction which this IDBCursor belongs to has its mode set to "readonly".
 Expecting exception from cursorFromReadOnlyTransaction.delete()
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.READ_ONLY_ERR
+PASS code is 0
 PASS ename is 'ReadOnlyError'
 
 One more IDBCursor.update() test:
 This method throws a DOMException of type ReadOnlyError if the transaction which this IDBCursor belongs to has its mode set to "readonly".
 Expecting exception from cursorFromReadOnlyTransaction.update({})
 PASS Exception was thrown.
-PASS code is IDBDatabaseException.READ_ONLY_ERR
+PASS code is 0
 PASS ename is 'ReadOnlyError'
 
 3.2.8 Transaction

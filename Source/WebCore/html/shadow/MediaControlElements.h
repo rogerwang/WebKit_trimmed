@@ -75,6 +75,8 @@ enum MediaControlElementType {
     MediaTextTrackDisplay,
     MediaExitFullscreenButton,
     MediaOverlayPlayButton,
+    MediaClosedCaptionsContainer,
+    MediaClosedCaptionsTrackList,
 };
 
 HTMLMediaElement* toParentMediaElement(Node*);
@@ -88,6 +90,7 @@ class MediaControlElement : public HTMLDivElement {
 public:
     void hide();
     void show();
+    bool isShowing() const;
 
     virtual MediaControlElementType displayType() const = 0;
 
@@ -380,17 +383,58 @@ private:
 
 class MediaControlToggleClosedCaptionsButtonElement : public MediaControlInputElement {
 public:
-    static PassRefPtr<MediaControlToggleClosedCaptionsButtonElement> create(Document*);
+    static PassRefPtr<MediaControlToggleClosedCaptionsButtonElement> create(Document*, MediaControls*);
 
-    virtual void defaultEventHandler(Event*);
     virtual bool willRespondToMouseClickEvents() OVERRIDE { return true; }
+    virtual void defaultEventHandler(Event*);
     virtual void updateDisplayType();
 
 private:
-    MediaControlToggleClosedCaptionsButtonElement(Document*);
-
+    MediaControlToggleClosedCaptionsButtonElement(Document*, MediaControls*);
     virtual const AtomicString& shadowPseudoId() const;
-};    
+
+#if PLATFORM(MAC)
+    MediaControls* m_controls;
+#endif
+};
+
+// ----------------------------
+
+class MediaControlClosedCaptionsContainerElement : public MediaControlElement {
+public:
+    static PassRefPtr<MediaControlClosedCaptionsContainerElement> create(Document*);
+
+    virtual bool willRespondToMouseClickEvents() OVERRIDE { return true; }
+
+private:
+    MediaControlClosedCaptionsContainerElement(Document*);
+
+    virtual MediaControlElementType displayType() const { return MediaClosedCaptionsContainer; }
+    virtual const AtomicString& shadowPseudoId() const;
+};
+
+// ----------------------------
+
+class MediaControlClosedCaptionsTrackListElement : public MediaControlElement {
+public:
+    static PassRefPtr<MediaControlClosedCaptionsTrackListElement> create(Document*, MediaControls*);
+
+    virtual void defaultEventHandler(Event*);
+    virtual bool willRespondToMouseClickEvents() OVERRIDE { return true; }
+
+    void updateDisplay();
+    void resetTrackListMenu();
+
+private:
+    MediaControlClosedCaptionsTrackListElement(Document*, MediaControls*);
+
+    virtual MediaControlElementType displayType() const { return MediaClosedCaptionsTrackList; }
+    virtual const AtomicString& shadowPseudoId() const;
+
+    typedef Vector<RefPtr<Element> > TrackMenuItems;
+    TrackMenuItems menuItems;
+    MediaControls* m_controls;
+};
 
 // ----------------------------
 

@@ -51,15 +51,13 @@
 #include "DOMSelection.h"
 #include "DOMWindow.h"
 #include "DateComponents.h"
-#include "DeviceMotionController.h"
-#include "DeviceOrientationController.h"
 #include "DocumentEventQueue.h"
 #include "DocumentFragment.h"
 #include "DocumentLoader.h"
 #include "DocumentMarkerController.h"
+#include "DocumentSharedObjectPool.h"
 #include "DocumentStyleSheetCollection.h"
 #include "DocumentType.h"
-#include "EditingText.h"
 #include "Editor.h"
 #include "Element.h"
 #include "ElementShadow.h"
@@ -503,6 +501,7 @@ Document::Document(Frame* frame, const KURL& url, bool isXHTML, bool isHTML)
     , m_scheduledTasksAreSuspended(false)
     , m_visualUpdatesAllowed(true)
     , m_visualUpdatesSuppressionTimer(this, &Document::visualUpdatesSuppressionTimerFired)
+    , m_sharedObjectPoolClearTimer(this, &Document::sharedObjectPoolClearTimerFired)
 #ifndef NDEBUG
     , m_didDispatchViewportPropertiesChanged(false)
 #endif
@@ -525,8 +524,6 @@ Document::Document(Frame* frame, const KURL& url, bool isXHTML, bool isHTML)
     // FIXME: Can/should we unify this behavior?
     if ((frame && frame->ownerElement()) || !url.isEmpty())
         setURL(url);
-
-    m_axObjectCache = 0;
 
     m_markers = adoptPtr(new DocumentMarkerController);
 
@@ -575,9 +572,6 @@ Document::Document(Frame* frame, const KURL& url, bool isXHTML, bool isHTML)
 
     for (unsigned i = 0; i < WTF_ARRAY_LENGTH(m_nodeListCounts); i++)
         m_nodeListCounts[i] = 0;
-
-    for (unsigned i = 0; i < WTF_ARRAY_LENGTH(m_collections); i++)
-        m_collections[i] = 0;
 
     InspectorCounters::incrementCounter(InspectorCounters::DocumentCounter);
 }
@@ -653,9 +647,6 @@ Document::~Document()
 
     m_weakReference->clear();
 
-    if (m_mediaQueryMatcher)
-        m_mediaQueryMatcher->documentDestroyed();
-
     clearStyleResolver(); // We need to destory CSSFontSelector before destroying m_cachedResourceLoader.
 
     // It's possible for multiple Documents to end up referencing the same CachedResourceLoader (e.g., SVGImages
@@ -673,9 +664,6 @@ Document::~Document()
 
     for (unsigned i = 0; i < WTF_ARRAY_LENGTH(m_nodeListCounts); i++)
         ASSERT(!m_nodeListCounts[i]);
-
-    for (unsigned i = 0; i < WTF_ARRAY_LENGTH(m_collections); i++)
-        ASSERT(!m_collections[i]);
 
     m_document = 0;
 
@@ -794,14 +782,13 @@ void Document::setCompatibilityMode(CompatibilityMode mode)
 {
     if (m_compatibilityModeLocked || mode == m_compatibilityMode)
         return;
-    ASSERT(m_styleSheetCollection->activeAuthorStyleSheets().isEmpty());
     bool wasInQuirksMode = inQuirksMode();
     m_compatibilityMode = mode;
     selectorQueryCache()->invalidate();
     if (inQuirksMode() != wasInQuirksMode) {
         // All user stylesheets have to reparse using the different mode.
-        m_styleSheetCollection->clearPageUserSheet();
-        m_styleSheetCollection->clearPageGroupUserSheets();
+        m_styleSheetCollection->clearPageUserStyleSheet();
+        m_styleSheetCollection->invalidateInjectedStyleSheetCache();
     }
 }
 
@@ -923,9 +910,9 @@ PassRefPtr<EntityReference> Document::createEntityReference(const String& name, 
     return EntityReference::create(this, name);
 }
 
-PassRefPtr<EditingText> Document::createEditingTextNode(const String& text)
+PassRefPtr<Text> Document::createEditingTextNode(const String& text)
 {
-    return EditingText::create(this, text);
+    return Text::createEditingText(this, text);
 }
 
 PassRefPtr<CSSStyleDeclaration> Document::createCSSStyleDeclaration()
@@ -1139,7 +1126,7 @@ bool Document::cssStickyPositionEnabled() const
 
 bool Document::cssRegionsEnabled() const
 {
-    return settings() && settings()->cssRegionsEnabled(); 
+    return RuntimeEnabledFeatures::cssRegionsEnabled(); 
 }
 
 bool Document::cssGridLayoutEnabled() const
@@ -1394,7 +1381,7 @@ PassRefPtr<NodeList> Document::nodesFromRect(int centerX, int centerY, unsigned 
     // When ignoreClipping is false, this method returns null for coordinates outside of the viewport.
     if (ignoreClipping)
         type |= HitTestRequest::IgnoreClipping;
-    else if (!frameView->visibleContentRect().intersects(HitTestResult::rectForPoint(point, topPadding, rightPadding, bottomPadding, leftPadding)))
+    else if (!frameView->visibleContentRect().intersects(HitTestLocation::rectForPoint(point, topPadding, rightPadding, bottomPadding, leftPadding)))
         return 0;
     if (allowShadowContent)
         type |= HitTestRequest::AllowShadowContent;
@@ -2148,6 +2135,9 @@ void Document::detach()
     // callers of Document::detach().
     m_frame = 0;
     m_renderArena.clear();
+
+    if (m_mediaQueryMatcher)
+        m_mediaQueryMatcher->documentDestroyed();
 }
 
 void Document::prepareForDestruction()
@@ -2171,99 +2161,36 @@ void Document::removeAllEventListeners()
 void Document::suspendActiveDOMObjects(ActiveDOMObject::ReasonForSuspension why)
 {
     ScriptExecutionContext::suspendActiveDOMObjects(why);
-
-#if ENABLE(DEVICE_ORIENTATION)
-    if (!page())
-        return;
-
-    if (DeviceMotionController* controller = DeviceMotionController::from(page()))
-        controller->suspendEventsForAllListeners(domWindow());
-    if (DeviceOrientationController* controller = DeviceOrientationController::from(page()))
-        controller->suspendEventsForAllListeners(domWindow());
-
-#endif
 }
 
 void Document::resumeActiveDOMObjects()
 {
     ScriptExecutionContext::resumeActiveDOMObjects();
-
-#if ENABLE(DEVICE_ORIENTATION)
-    if (!page())
-        return;
-
-    if (DeviceMotionController* controller = DeviceMotionController::from(page()))
-        controller->resumeEventsForAllListeners(domWindow());
-    if (DeviceOrientationController* controller = DeviceOrientationController::from(page()))
-        controller->resumeEventsForAllListeners(domWindow());
-#endif
 }
 
 void Document::clearAXObjectCache()
 {
-    // clear cache in top document
-    if (m_axObjectCache) {
-        // Clear the cache member variable before calling delete because attempts
-        // are made to access it during destruction.
-        AXObjectCache* axObjectCache = m_axObjectCache;
-        m_axObjectCache = 0;
-        delete axObjectCache;
-        return;
-    }
-    
-    // ask the top-level document to clear its cache
-    Document* doc = topDocument();
-    if (doc != this)
-        doc->clearAXObjectCache();
+    // Clear the cache member variable before calling delete because attempts
+    // are made to access it during destruction.
+    topDocument()->m_axObjectCache.release();
 }
 
 bool Document::axObjectCacheExists() const
 {
-    if (m_axObjectCache)
-        return true;
-    
-    Document* doc = topDocument();
-    if (doc != this)
-        return doc->axObjectCacheExists();
-    
-    return false;
+    return topDocument()->m_axObjectCache;
 }
-    
+
 AXObjectCache* Document::axObjectCache() const
 {
     // The only document that actually has a AXObjectCache is the top-level
     // document.  This is because we need to be able to get from any WebCoreAXObject
     // to any other WebCoreAXObject on the same page.  Using a single cache allows
     // lookups across nested webareas (i.e. multiple documents).
-    
-    if (m_axObjectCache) {
-        // return already known top-level cache
-        if (!ownerElement())
-            return m_axObjectCache;
-        
-        // In some pages with frames, the cache is created before the sub-webarea is
-        // inserted into the tree.  Here, we catch that case and just toss the old
-        // cache and start over.
-        // NOTE: This recovery may no longer be needed. I have been unable to trigger
-        // it again. See rdar://5794454
-        // FIXME: Can this be fixed when inserting the subframe instead of now?
-        // FIXME: If this function was called to get the cache in order to remove
-        // an AXObject, we are now deleting the cache as a whole and returning a
-        // new empty cache that does not contain the AXObject! That should actually
-        // be OK. I am concerned about other cases like this where accessing the
-        // cache blows away the AXObject being operated on.
-        delete m_axObjectCache;
-        m_axObjectCache = 0;
-    }
-
-    // ask the top-level document for its cache
-    Document* doc = topDocument();
-    if (doc != this)
-        return doc->axObjectCache();
-    
-    // this is the top-level document, so install a new cache
-    m_axObjectCache = new AXObjectCache(this);
-    return m_axObjectCache;
+    Document* topDocument = this->topDocument();
+    ASSERT(topDocument == this || !m_axObjectCache);
+    if (!topDocument->m_axObjectCache)
+        topDocument->m_axObjectCache = adoptPtr(new AXObjectCache(this));
+    return topDocument->m_axObjectCache.get();
 }
 
 void Document::setVisuallyOrdered()
@@ -2566,6 +2493,10 @@ void Document::implicitClose()
 void Document::setParsing(bool b)
 {
     m_bParsing = b;
+
+    if (m_bParsing && !m_sharedObjectPool)
+        m_sharedObjectPool = DocumentSharedObjectPool::create();
+
     if (!m_bParsing && view())
         view()->scheduleRelayout();
 
@@ -3254,7 +3185,7 @@ void Document::styleResolverChanged(StyleResolverUpdateFlag updateFlag)
     if (didLayoutWithPendingStylesheets() && !m_styleSheetCollection->hasPendingSheets()) {
         m_pendingSheetLayout = IgnoreLayoutWithPendingSheets;
         if (renderer())
-            renderer()->repaint();
+            renderView()->repaintViewAndCompositedLayers();
     }
 
     if (!stylesheetChangeRequiresStyleRecalc)
@@ -3517,25 +3448,29 @@ void Document::getFocusableNodes(Vector<RefPtr<Node> >& nodes)
   
 void Document::setCSSTarget(Element* n)
 {
-    if (m_cssTarget)
+    if (m_cssTarget) {
         m_cssTarget->setNeedsStyleRecalc();
+        invalidateParentDistributionIfNecessary(m_cssTarget, SelectRuleFeatureSet::RuleFeatureTarget);
+    }
     m_cssTarget = n;
-    if (n)
+    if (n) {
         n->setNeedsStyleRecalc();
+        invalidateParentDistributionIfNecessary(n, SelectRuleFeatureSet::RuleFeatureTarget);
+    }
 }
 
-void Document::registerNodeListCache(DynamicNodeListCacheBase* list)
+void Document::registerNodeList(LiveNodeListBase* list)
 {
-    if (list->type() != NodeListCollectionType)
+    if (list->hasIdNameCache())
         m_nodeListCounts[InvalidateOnIdNameAttrChange]++;
     m_nodeListCounts[list->invalidationType()]++;
     if (list->isRootedAtDocument())
         m_listsInvalidatedAtDocument.add(list);
 }
 
-void Document::unregisterNodeListCache(DynamicNodeListCacheBase* list)
+void Document::unregisterNodeList(LiveNodeListBase* list)
 {
-    if (list->type() != NodeListCollectionType)
+    if (list->hasIdNameCache())
         m_nodeListCounts[InvalidateOnIdNameAttrChange]--;
     m_nodeListCounts[list->invalidationType()]--;
     if (list->isRootedAtDocument()) {
@@ -4399,113 +4334,65 @@ bool Document::hasSVGRootNode() const
 }
 #endif
 
-// FIXME: This caching mechanism should be merged that of DynamicNodeList in NodeRareData.
-PassRefPtr<HTMLCollection> Document::cachedCollection(CollectionType type)
+PassRefPtr<HTMLCollection> Document::ensureCachedCollection(CollectionType type)
 {
-    ASSERT(static_cast<unsigned>(type) < NumUnnamedDocumentCachedTypes);
-    if (m_collections[type])
-        return m_collections[type];
-
-    RefPtr<HTMLCollection> collection;
-    if (type == DocAll)
-        collection = HTMLAllCollection::create(this);
-    else
-        collection = HTMLCollection::create(this, type);
-    m_collections[type] = collection.get();
-
-    return collection.release();
-}
-
-void Document::removeCachedHTMLCollection(HTMLCollection* collection, CollectionType type)
-{
-    ASSERT_UNUSED(collection, m_collections[type] == collection);
-    m_collections[type] = 0;
+    return ensureRareData()->ensureNodeLists()->addCacheWithAtomicName<HTMLCollection>(this, type);
 }
 
 PassRefPtr<HTMLCollection> Document::images()
 {
-    return cachedCollection(DocImages);
+    return ensureCachedCollection(DocImages);
 }
 
 PassRefPtr<HTMLCollection> Document::applets()
 {
-    return cachedCollection(DocApplets);
+    return ensureCachedCollection(DocApplets);
 }
 
 PassRefPtr<HTMLCollection> Document::embeds()
 {
-    return cachedCollection(DocEmbeds);
+    return ensureCachedCollection(DocEmbeds);
 }
 
 PassRefPtr<HTMLCollection> Document::plugins()
 {
     // This is an alias for embeds() required for the JS DOM bindings.
-    return cachedCollection(DocEmbeds);
-}
-
-PassRefPtr<HTMLCollection> Document::objects()
-{
-    return cachedCollection(DocObjects);
+    return ensureCachedCollection(DocEmbeds);
 }
 
 PassRefPtr<HTMLCollection> Document::scripts()
 {
-    return cachedCollection(DocScripts);
+    return ensureCachedCollection(DocScripts);
 }
 
 PassRefPtr<HTMLCollection> Document::links()
 {
-    return cachedCollection(DocLinks);
+    return ensureCachedCollection(DocLinks);
 }
 
 PassRefPtr<HTMLCollection> Document::forms()
 {
-    return cachedCollection(DocForms);
+    return ensureCachedCollection(DocForms);
 }
 
 PassRefPtr<HTMLCollection> Document::anchors()
 {
-    return cachedCollection(DocAnchors);
+    return ensureCachedCollection(DocAnchors);
 }
 
 PassRefPtr<HTMLCollection> Document::all()
 {
-    return cachedCollection(DocAll);
+    return ensureCachedCollection(DocAll);
 }
 
 PassRefPtr<HTMLCollection> Document::windowNamedItems(const AtomicString& name)
 {
-    NamedCollectionMap::AddResult result = m_windowNamedItemCollections.add(name, 0);
-    if (!result.isNewEntry)
-        return result.iterator->value;
-
-    RefPtr<HTMLNameCollection> collection = HTMLNameCollection::create(this, WindowNamedItems, name);
-    result.iterator->value = collection.get();
-    return collection.release();
+    return ensureRareData()->ensureNodeLists()->addCacheWithAtomicName<HTMLNameCollection>(this, WindowNamedItems, name);
 }
 
 PassRefPtr<HTMLCollection> Document::documentNamedItems(const AtomicString& name)
 {
-    NamedCollectionMap::AddResult result = m_documentNamedItemCollections.add(name, 0);
-    if (!result.isNewEntry)
-        return result.iterator->value;
-
-    RefPtr<HTMLNameCollection> collection = HTMLNameCollection::create(this, DocumentNamedItems, name);
-    result.iterator->value = collection.get();
-    return collection.release();
-}
-
-// FIXME: This caching mechanism should be merged that of DynamicNodeList in NodeRareData.
-void Document::removeWindowNamedItemCache(HTMLCollection* collection, const AtomicString& name)
-{
-    ASSERT_UNUSED(collection, m_windowNamedItemCollections.get(name) == collection);
-    m_windowNamedItemCollections.remove(name);
-}
-
-void Document::removeDocumentNamedItemCache(HTMLCollection* collection, const AtomicString& name)
-{
-    ASSERT_UNUSED(collection, m_documentNamedItemCollections.get(name) == collection);
-    m_documentNamedItemCollections.remove(name);
+    return ensureRareData()->ensureNodeLists()->addCacheWithAtomicName<HTMLNameCollection>(this, DocumentNamedItems, name);
 }
 
 void Document::finishedParsing()
@@ -4534,9 +4421,17 @@ void Document::finishedParsing()
         InspectorInstrumentation::domContentLoadedEventFired(f.get());
     }
 
-    // The ElementAttributeData sharing cache is only used during parsing since
-    // that's when the majority of immutable attribute data will be created.
-    m_immutableAttributeDataCache.clear();
+    // Schedule dropping of the DocumentSharedObjectPool. We keep it alive for a while after parsing finishes
+    // so that dynamically inserted content can also benefit from sharing optimizations.
+    // Note that we don't refresh the timer on pool access since that could lead to huge caches being kept
+    // alive indefinitely by something innocuous like JS setting .innerHTML repeatedly on a timer.
+    static const int timeToKeepSharedObjectPoolAliveAfterParsingFinishedInSeconds = 10;
+    m_sharedObjectPoolClearTimer.startOneShot(timeToKeepSharedObjectPoolAliveAfterParsingFinishedInSeconds);
+}
+
+void Document::sharedObjectPoolClearTimerFired(Timer<Document>*)
+{
+    m_sharedObjectPool.clear();
 }
 
 PassRefPtr<XPathExpression> Document::createExpression(const String& expression,
@@ -4661,19 +4556,8 @@ void Document::initSecurityContext()
     setSecurityOrigin(isSandboxed(SandboxOrigin) ? SecurityOrigin::createUnique() : SecurityOrigin::create(m_url));
     setContentSecurityPolicy(ContentSecurityPolicy::create(this));
 
-    if (SecurityPolicy::allowSubstituteDataAccessToLocal()) {
-        // If this document was loaded with substituteData, then the document can
-        // load local resources.  See https://bugs.webkit.org/show_bug.cgi?id=16756
-        // and https://bugs.webkit.org/show_bug.cgi?id=19760 for further
-        // discussion.
-        
-        DocumentLoader* documentLoader = loader();
-        if (documentLoader && documentLoader->substituteData().isValid())
-            securityOrigin()->grantLoadLocalResources();
-    }
-
     if (Settings* settings = this->settings()) {
-        if (!settings->isWebSecurityEnabled()) {
+        if (!settings->webSecurityEnabled()) {
             // Web security is turned off. We should let this document access every other document. This is used primary by testing
             // harnesses for web sites.
             securityOrigin()->grantUniversalAccess();
@@ -5082,7 +4966,7 @@ void Document::requestFullScreenForElement(Element* element, unsigned short flag
         // The context object's node document fullscreen element stack is not empty and its top element
         // is not an ancestor of the context object. (NOTE: Ignore this requirement if the request was
         // made via the legacy Mozilla-style API.)
-        if (!m_fullScreenElementStack.isEmpty() && !m_fullScreenElementStack.first()->contains(element) && !inLegacyMozillaMode)
+        if (!m_fullScreenElementStack.isEmpty() && !m_fullScreenElementStack.last()->contains(element) && !inLegacyMozillaMode)
             break;
 
         // A descendant browsing context's document has a non-empty fullscreen element stack.
@@ -5188,8 +5072,8 @@ void Document::webkitCancelFullScreen()
 
     // To achieve that aim, remove all the elements from the top document's stack except for the first before
     // calling webkitExitFullscreen():
-    Deque<RefPtr<Element> > replacementFullscreenElementStack;
-    replacementFullscreenElementStack.prepend(topDocument()->webkitFullscreenElement());
+    Vector<RefPtr<Element> > replacementFullscreenElementStack;
+    replacementFullscreenElementStack.append(topDocument()->webkitFullscreenElement());
     topDocument()->m_fullScreenElementStack.swap(replacementFullscreenElementStack);
 
     topDocument()->webkitExitFullscreen();
@@ -5519,12 +5403,12 @@ void Document::popFullscreenElementStack()
     if (m_fullScreenElementStack.isEmpty())
         return;
 
-    m_fullScreenElementStack.removeFirst();
+    m_fullScreenElementStack.removeLast();
 }
 
 void Document::pushFullscreenElementStack(Element* element)
 {
-    m_fullScreenElementStack.prepend(element);
+    m_fullScreenElementStack.append(element);
 }
 
 void Document::addDocumentToFullScreenChangeEventQueue(Document* doc)
@@ -5536,6 +5420,21 @@ void Document::addDocumentToFullScreenChangeEventQueue(Document* doc)
     if (!target)
         target = doc;
     m_fullScreenChangeEventTargetQueue.append(target);
+}
+#endif
+
+#if ENABLE(DIALOG_ELEMENT)
+void Document::addToTopLayer(Element* element)
+{
+    ASSERT(!m_topLayerElements.contains(element));
+    m_topLayerElements.append(element);
+}
+
+void Document::removeFromTopLayer(Element* element)
+{
+    size_t position = m_topLayerElements.find(element);
+    ASSERT(position != notFound);
+    m_topLayerElements.remove(position);
 }
 #endif
 
@@ -5736,7 +5635,7 @@ PassRefPtr<NodeList> Document::getItems(const String& typeNames)
     // In this case we need to create an empty string identifier to map such request in the cache.
     String localTypeNames = typeNames.isNull() ? MicroDataItemList::undefinedItemType() : typeNames;
 
-    return ensureRareData()->ensureNodeLists()->addCacheWithName<MicroDataItemList>(this, DynamicNodeList::MicroDataItemListType, localTypeNames);
+    return ensureRareData()->ensureNodeLists()->addCacheWithName<MicroDataItemList>(this, MicroDataItemListType, localTypeNames);
 }
 #endif
 
@@ -5746,6 +5645,15 @@ IntSize Document::viewportSize() const
         return IntSize();
     return view()->visibleContentRect(/* includeScrollbars */ true).size();
 }
+
+#if ENABLE(CSS_DEVICE_ADAPTATION)
+IntSize Document::initialViewportSize() const
+{
+    if (!view())
+        return IntSize();
+    return view()->initialViewportSize();
+}
+#endif
 
 Node* eventTargetNodeForDocument(Document* doc)
 {
@@ -5920,6 +5828,8 @@ void Document::reportMemoryUsage(MemoryObjectInfo* memoryObjectInfo) const
 {
     MemoryClassInfo info(memoryObjectInfo, this, WebCoreMemoryTypes::DOM);
     ContainerNode::reportMemoryUsage(memoryObjectInfo);
+    TreeScope::reportMemoryUsage(memoryObjectInfo);
+    ScriptExecutionContext::reportMemoryUsage(memoryObjectInfo);
     info.addMember(m_styleResolver);
     info.addMember(m_url);
     info.addMember(m_baseURL);
@@ -5944,8 +5854,6 @@ void Document::reportMemoryUsage(MemoryObjectInfo* memoryObjectInfo) const
     info.addMember(m_xmlEncoding);
     info.addMember(m_xmlVersion);
     info.addMember(m_contentLanguage);
-    info.addMember(m_documentNamedItemCollections);
-    info.addMember(m_windowNamedItemCollections);
 #if ENABLE(DASHBOARD_SUPPORT) || ENABLE(DRAGGABLE_REGION)
     info.addMember(m_annotatedRegions);
 #endif
@@ -5958,70 +5866,10 @@ void Document::reportMemoryUsage(MemoryObjectInfo* memoryObjectInfo) const
     info.addMember(m_eventQueue);
     info.addMember(m_mediaCanStartListeners);
     info.addMember(m_pendingTasks);
-}
-
-class ImmutableAttributeDataCacheKey {
-public:
-    ImmutableAttributeDataCacheKey(const QualifiedName& tagName, const Attribute* attributes, unsigned attributeCount)
-        : m_tagQName(tagName)
-        , m_attributes(attributes)
-        , m_attributeCount(attributeCount)
-    { }
-
-    bool operator!=(const ImmutableAttributeDataCacheKey& other) const
-    {
-        if (m_tagQName != other.m_tagQName)
-            return true;
-        if (m_attributeCount != other.m_attributeCount)
-            return true;
-        return memcmp(m_attributes, other.m_attributes, sizeof(Attribute) * m_attributeCount);
-    }
-
-    unsigned hash() const
-    {
-        unsigned attributeHash = StringHasher::hashMemory(m_attributes, m_attributeCount * sizeof(Attribute));
-        return WTF::pairIntHash(m_tagQName.localName().impl()->existingHash(), attributeHash);
-    }
-
-private:
-    QualifiedName m_tagQName;
-    const Attribute* m_attributes;
-    unsigned m_attributeCount;
-};
-
-struct ImmutableAttributeDataCacheEntry {
-    ImmutableAttributeDataCacheEntry(const ImmutableAttributeDataCacheKey& k, PassRefPtr<ElementAttributeData> v)
-        : key(k)
-        , value(v)
-    { }
-
-    ImmutableAttributeDataCacheKey key;
-    RefPtr<ElementAttributeData> value;
-};
-
-PassRefPtr<ElementAttributeData> Document::cachedImmutableAttributeData(const Element* element, const Vector<Attribute>& attributes)
-{
-    ASSERT(!attributes.isEmpty());
-
-    ImmutableAttributeDataCacheKey cacheKey(element->tagQName(), attributes.data(), attributes.size());
-    unsigned cacheHash = cacheKey.hash();
-
-    ImmutableAttributeDataCache::iterator cacheIterator = m_immutableAttributeDataCache.add(cacheHash, nullptr).iterator;
-    if (cacheIterator->value && cacheIterator->value->key != cacheKey)
-        cacheHash = 0;
-
-    RefPtr<ElementAttributeData> attributeData;
-    if (cacheHash && cacheIterator->value)
-        attributeData = cacheIterator->value->value;
-    else
-        attributeData = ElementAttributeData::createImmutable(attributes);
-
-    if (!cacheHash || cacheIterator->value)
-        return attributeData.release();
-
-    cacheIterator->value = adoptPtr(new ImmutableAttributeDataCacheEntry(ImmutableAttributeDataCacheKey(element->tagQName(), attributeData->immutableAttributeArray(), attributeData->length()), attributeData));
-
-    return attributeData.release();
+#if ENABLE(LINK_PRERENDER)
+    info.addMember(m_prerenderer);
+#endif
+    info.addMember(m_listsInvalidatedAtDocument);
 }
 
 bool Document::haveStylesheetsLoaded() const

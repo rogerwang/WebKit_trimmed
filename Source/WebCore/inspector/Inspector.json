@@ -345,6 +345,22 @@
                 "hidden": true
             },
             {
+                "name": "canShowFPSCounter",
+                "description": "Tells if backend supports a FPS counter display",
+                "returns": [
+                    { "name": "show", "type": "boolean", "description": "True if the FPS count can be shown" }
+                ],
+                "hidden": true
+            },
+            {
+                "name": "setShowFPSCounter",
+                "description": "Requests that backend shows the FPS counter",
+                "parameters": [
+                    { "name": "show", "type": "boolean", "description": "True for showing the FPS counter" }
+                ],
+                "hidden": true
+            },
+            {
                 "name": "getScriptExecutionStatus",
                 "description": "Determines if scripts can be executed in the page.",
                 "returns": [
@@ -1842,10 +1858,11 @@
             {
                 "name": "highlightNode",
                 "parameters": [
-                    { "name": "nodeId", "$ref": "NodeId", "description": "Identifier of the node to highlight." },
+                    { "name": "nodeId", "$ref": "NodeId", "optional": true, "description": "Identifier of the node to highlight." },
+                    { "name": "objectId", "$ref": "Runtime.RemoteObjectId", "optional": true, "description": "JavaScript object id of the node to be highlighted." },
                     { "name": "highlightConfig", "$ref": "HighlightConfig", "description": "A descriptor for the highlight appearance." }
                 ],
-                "description": "Highlights DOM node with given id."
+                "description": "Highlights DOM node with given id or with the given JavaScript object wrapper. Either nodeId or objectId must be specified."
             },
             {
                 "name": "hideHighlight",
@@ -3164,7 +3181,9 @@
                 "type": "object",
                 "properties": [
                     { "name": "id", "$ref": "TraceLogId" },
-                    { "name": "calls", "type": "array", "items": { "$ref": "Call" } }
+                    { "name": "calls", "type": "array", "items": { "$ref": "Call" } },
+                    { "name": "startOffset", "type": "integer", "optional": true },
+                    { "name": "alive", "type": "boolean", "optional": true }
                 ]
             }
         ],
@@ -3190,9 +3209,22 @@
                 ]
             },
             {
-                "name": "getTraceLog",
+                "name": "startCapturing",
+                "returns": [
+                    { "name": "traceLogId", "$ref": "TraceLogId" }
+                ]
+            },
+            {
+                "name": "stopCapturing",
                 "parameters": [
                     { "name": "traceLogId", "$ref": "TraceLogId" }
+                ]
+            },
+            {
+                "name": "getTraceLog",
+                "parameters": [
+                    { "name": "traceLogId", "$ref": "TraceLogId" },
+                    { "name": "startOffset", "type": "integer", "optional": true }
                 ],
                 "returns": [
                     { "name": "traceLog", "$ref": "TraceLog" }

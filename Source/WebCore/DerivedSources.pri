@@ -47,6 +47,8 @@ EVENT_TARGET_FACTORY = $$PWD/dom/EventTargetFactory.in
 
 DOM_EXCEPTIONS = $$PWD/dom/DOMExceptions.in
 
+SETTINGS_MACROS = $$PWD/page/Settings.in
+
 COLORDATA_GPERF = $$PWD/platform/ColorData.gperf
 
 WALDOCSSPROPS = $$PWD/css/CSSPropertyNames.in
@@ -209,8 +211,10 @@ IDL_BINDINGS += \
     $$PWD/css/WebKitCSSKeyframeRule.idl \
     $$PWD/css/WebKitCSSKeyframesRule.idl \
     $$PWD/css/WebKitCSSMatrix.idl \
+    $$PWD/css/WebKitCSSMixFunctionValue.idl \
     $$PWD/css/WebKitCSSRegionRule.idl \
     $$PWD/css/WebKitCSSTransformValue.idl \
+    $$PWD/css/WebKitCSSViewportRule.idl \
     $$PWD/dom/Attr.idl \
     $$PWD/dom/BeforeLoadEvent.idl \
     $$PWD/dom/CharacterData.idl \
@@ -247,7 +251,10 @@ IDL_BINDINGS += \
     $$PWD/dom/MessageChannel.idl \
     $$PWD/dom/MessageEvent.idl \
     $$PWD/dom/MessagePort.idl \
+    $$PWD/dom/MutationCallback.idl \
     $$PWD/dom/MutationEvent.idl \
+    $$PWD/dom/MutationObserver.idl \
+    $$PWD/dom/MutationRecord.idl \
     $$PWD/dom/NamedNodeMap.idl \
     $$PWD/dom/Node.idl \
     $$PWD/dom/NodeFilter.idl \
@@ -350,6 +357,7 @@ IDL_BINDINGS += \
     $$PWD/html/HTMLEmbedElement.idl \
     $$PWD/html/HTMLFieldSetElement.idl \
     $$PWD/html/HTMLFontElement.idl \
+    $$PWD/html/HTMLFormControlsCollection.idl \
     $$PWD/html/HTMLFormElement.idl \
     $$PWD/html/HTMLFrameElement.idl \
     $$PWD/html/HTMLFrameSetElement.idl \
@@ -752,7 +760,6 @@ generateBindings.depends = ${QMAKE_FUNC_FILE_OUT_PATH}/$$SUPPLEMENTAL_DEPENDENCY
                            $$PWD/bindings/scripts/CodeGenerator.pm \
                            $$PWD/bindings/scripts/CodeGeneratorJS.pm \
                            $$PWD/bindings/scripts/IDLParser.pm \
-                           $$PWD/bindings/scripts/IDLStructure.pm \
                            $$PWD/bindings/scripts/InFilesParser.pm \
                            $$PWD/bindings/scripts/preprocessor.pm
 GENERATORS += generateBindings
@@ -863,6 +870,14 @@ exceptioncodedescription.script = $$PWD/dom/make_dom_exceptions.pl
 exceptioncodedescription.commands = perl -I$$PWD/bindings/scripts $$exceptioncodedescription.script --input $$DOM_EXCEPTIONS --outputDir ${QMAKE_FUNC_FILE_OUT_PATH}
 exceptioncodedescription.depends = $$PWD/dom/make_dom_exceptions.pl $$DOM_EXCEPTIONS
 GENERATORS += exceptioncodedescription
+
+# GENERATOR 5-H:
+settingsmacros.output = SettingsMacros.h
+settingsmacros.input = SETTINGS_MACROS
+settingsmacros.script = $$PWD/page/make_settings.pl
+settingsmacros.commands = perl -I$$PWD/bindings/scripts $$settingsmacros.script --input $$SETTINGS_MACROS --outputDir ${QMAKE_FUNC_FILE_OUT_PATH}
+settingsmacros.depends = $$PWD/page/make_settings.pl $$SETTINGS_MACROS
+GENERATORS += settingsmacros
 
 # GENERATOR 8-A:
 entities.output = HTMLEntityTable.cpp

@@ -98,11 +98,12 @@ public:
 
 #if ENABLE(INDEXED_DATABASE)
     static PassRefPtr<SerializedScriptValue> create(JSC::ExecState*, JSC::JSValue);
-    static PassRefPtr<SerializedScriptValue> createFromWire(const String& data);
-    String toWireString() const;
     static PassRefPtr<SerializedScriptValue> numberValue(double value);
     JSC::JSValue deserialize(JSC::ExecState*, JSC::JSGlobalObject*);
 #endif
+
+    static PassRefPtr<SerializedScriptValue> createFromWire(const String& data);
+    String toWireString() const;
 
     ~SerializedScriptValue();
 

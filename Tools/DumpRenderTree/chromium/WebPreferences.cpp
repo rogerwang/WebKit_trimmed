@@ -30,6 +30,7 @@
 
 #include "config.h"
 #include "WebPreferences.h"
+#include "WebRuntimeFeatures.h"
 
 #include "WebView.h"
 
@@ -118,6 +119,8 @@ void WebPreferences::reset()
     deferred2dCanvasEnabled = false;
     acceleratedPaintingEnabled = false;
     forceCompositingMode = false;
+    perTilePaintingEnabled = false;
+    acceleratedAnimationEnabled = false;
     deferredImageDecodingEnabled = false;
     mediaPlaybackRequiresUserGesture = false;
     mockScrollbarsEnabled = false;
@@ -198,7 +201,7 @@ void WebPreferences::applyTo(WebView* webView)
     settings->setDefaultTextEncodingName(defaultTextEncodingName);
     settings->setDeveloperExtrasEnabled(developerExtrasEnabled);
     settings->setExperimentalWebGLEnabled(experimentalWebGLEnabled);
-    settings->setExperimentalCSSRegionsEnabled(experimentalCSSRegionsEnabled);
+    WebRuntimeFeatures::enableCSSRegions(experimentalCSSRegionsEnabled);
     settings->setExperimentalCSSGridLayoutEnabled(experimentalCSSGridLayoutEnabled);
     settings->setExperimentalCSSCustomFilterEnabled(cssCustomFilterEnabled);
     settings->setJavaEnabled(javaEnabled);
@@ -231,10 +234,11 @@ void WebPreferences::applyTo(WebView* webView)
     settings->setAccelerated2dCanvasEnabled(accelerated2dCanvasEnabled);
     settings->setDeferred2dCanvasEnabled(deferred2dCanvasEnabled);
     settings->setAcceleratedPaintingEnabled(acceleratedPaintingEnabled);
+    settings->setPerTilePaintingEnabled(perTilePaintingEnabled);
+    settings->setAcceleratedAnimationEnabled(acceleratedAnimationEnabled);
     settings->setDeferredImageDecodingEnabled(deferredImageDecodingEnabled);
     settings->setMediaPlaybackRequiresUserGesture(mediaPlaybackRequiresUserGesture);
     settings->setMockScrollbarsEnabled(mockScrollbarsEnabled);
-    settings->setApplyDefaultDeviceScaleFactorInCompositor(forceCompositingMode);
     settings->setShouldRespectImageOrientation(shouldRespectImageOrientation);
 
     // Fixed values.
@@ -254,4 +258,5 @@ void WebPreferences::applyTo(WebView* webView)
     settings->setValidationMessageTimerMagnification(-1);
     settings->setVisualWordMovementEnabled(false);
     settings->setPasswordEchoEnabled(false);
+    settings->setApplyDeviceScaleFactorInCompositor(true);
 }

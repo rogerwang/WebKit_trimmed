@@ -77,6 +77,12 @@ public:
     virtual void overrideDeviceMetrics(int, int, float, bool);
     virtual void autoZoomPageToFitWidth();
 
+    virtual bool overridesShowPaintRects();
+    virtual void setShowPaintRects(bool);
+
+    virtual bool canShowFPSCounter();
+    virtual void setShowFPSCounter(bool);
+
     virtual bool supportsFrameInstrumentation();
 
     virtual void getAllocatedObjects(HashSet<const void*>&);

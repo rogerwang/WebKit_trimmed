@@ -1,28 +1,3 @@
-CONSOLE MESSAGE: The setVersion() method is non-standard and will be removed. Use the "upgradeneeded" event instead.
-CONSOLE MESSAGE: Numeric direction values are deprecated in openCursor and openKeyCursor. Use "next", "nextunique", "prev", or "prevunique".
-CONSOLE MESSAGE: Numeric direction values are deprecated in openCursor and openKeyCursor. Use "next", "nextunique", "prev", or "prevunique".
-CONSOLE MESSAGE: Numeric direction values are deprecated in openCursor and openKeyCursor. Use "next", "nextunique", "prev", or "prevunique".
-CONSOLE MESSAGE: Numeric direction values are deprecated in openCursor and openKeyCursor. Use "next", "nextunique", "prev", or "prevunique".
-CONSOLE MESSAGE: Numeric direction values are deprecated in openCursor and openKeyCursor. Use "next", "nextunique", "prev", or "prevunique".
-CONSOLE MESSAGE: Numeric direction values are deprecated in openCursor and openKeyCursor. Use "next", "nextunique", "prev", or "prevunique".
-CONSOLE MESSAGE: Numeric direction values are deprecated in openCursor and openKeyCursor. Use "next", "nextunique", "prev", or "prevunique".
-CONSOLE MESSAGE: Numeric direction values are deprecated in openCursor and openKeyCursor. Use "next", "nextunique", "prev", or "prevunique".
-CONSOLE MESSAGE: Numeric direction values are deprecated in openCursor and openKeyCursor. Use "next", "nextunique", "prev", or "prevunique".
-CONSOLE MESSAGE: Numeric direction values are deprecated in openCursor and openKeyCursor. Use "next", "nextunique", "prev", or "prevunique".
-CONSOLE MESSAGE: Numeric direction values are deprecated in openCursor and openKeyCursor. Use "next", "nextunique", "prev", or "prevunique".
-CONSOLE MESSAGE: Numeric direction values are deprecated in openCursor and openKeyCursor. Use "next", "nextunique", "prev", or "prevunique".
-CONSOLE MESSAGE: Numeric direction values are deprecated in openCursor and openKeyCursor. Use "next", "nextunique", "prev", or "prevunique".
-CONSOLE MESSAGE: Numeric direction values are deprecated in openCursor and openKeyCursor. Use "next", "nextunique", "prev", or "prevunique".
-CONSOLE MESSAGE: Numeric direction values are deprecated in openCursor and openKeyCursor. Use "next", "nextunique", "prev", or "prevunique".
-CONSOLE MESSAGE: Numeric direction values are deprecated in openCursor and openKeyCursor. Use "next", "nextunique", "prev", or "prevunique".
-CONSOLE MESSAGE: Numeric direction values are deprecated in openCursor and openKeyCursor. Use "next", "nextunique", "prev", or "prevunique".
-CONSOLE MESSAGE: Numeric direction values are deprecated in openCursor and openKeyCursor. Use "next", "nextunique", "prev", or "prevunique".
-CONSOLE MESSAGE: Numeric direction values are deprecated in openCursor and openKeyCursor. Use "next", "nextunique", "prev", or "prevunique".
-CONSOLE MESSAGE: Numeric direction values are deprecated in openCursor and openKeyCursor. Use "next", "nextunique", "prev", or "prevunique".
-CONSOLE MESSAGE: Numeric direction values are deprecated in openCursor and openKeyCursor. Use "next", "nextunique", "prev", or "prevunique".
-CONSOLE MESSAGE: Numeric direction values are deprecated in openCursor and openKeyCursor. Use "next", "nextunique", "prev", or "prevunique".
-CONSOLE MESSAGE: Numeric direction values are deprecated in openCursor and openKeyCursor. Use "next", "nextunique", "prev", or "prevunique".
-CONSOLE MESSAGE: Numeric direction values are deprecated in openCursor and openKeyCursor. Use "next", "nextunique", "prev", or "prevunique".
 Validate the overloads of IDBObjectStore.openCursor(), IDBIndex.openCursor() and IDBIndex.openKeyCursor().
 
 On success, you will see a series of "PASS" messages, followed by "TEST COMPLETE".
@@ -30,12 +5,9 @@ On success, you will see a series of "PASS" messages, followed by "TEST COMPLETE
 
 indexedDB = self.indexedDB || self.webkitIndexedDB || self.mozIndexedDB || self.msIndexedDB || self.OIndexedDB;
 
-dbname = 'cursor-overloads'
+dbname = "cursor-overloads.html"
 indexedDB.deleteDatabase(dbname)
 indexedDB.open(dbname)
-db = request.result
-PASS db.version is 1
-db.setVersion('1')
 store = db.createObjectStore('store')
 index = store.createIndex('index', 'value')
 store.put({value: 0}, 0)
@@ -62,18 +34,6 @@ PASS event.target.result.direction is "prev"
 store.openCursor(0, 'prevunique')
 PASS event.target.result is non-null.
 PASS event.target.result.direction is "prevunique"
-store.openCursor(0, IDBCursor.NEXT)
-PASS event.target.result is non-null.
-PASS event.target.result.direction is "next"
-store.openCursor(0, IDBCursor.NEXT_NO_DUPLICATE)
-PASS event.target.result is non-null.
-PASS event.target.result.direction is "nextunique"
-store.openCursor(0, IDBCursor.PREV)
-PASS event.target.result is non-null.
-PASS event.target.result.direction is "prev"
-store.openCursor(0, IDBCursor.PREV_NO_DUPLICATE)
-PASS event.target.result is non-null.
-PASS event.target.result.direction is "prevunique"
 store.openCursor(IDBKeyRange.only(0))
 PASS event.target.result is non-null.
 PASS event.target.result.direction is "next"
@@ -87,18 +47,6 @@ store.openCursor(IDBKeyRange.only(0), 'prev')
 PASS event.target.result is non-null.
 PASS event.target.result.direction is "prev"
 store.openCursor(IDBKeyRange.only(0), 'prevunique')
-PASS event.target.result is non-null.
-PASS event.target.result.direction is "prevunique"
-store.openCursor(IDBKeyRange.only(0), IDBCursor.NEXT)
-PASS event.target.result is non-null.
-PASS event.target.result.direction is "next"
-store.openCursor(IDBKeyRange.only(0), IDBCursor.NEXT_NO_DUPLICATE)
-PASS event.target.result is non-null.
-PASS event.target.result.direction is "nextunique"
-store.openCursor(IDBKeyRange.only(0), IDBCursor.PREV)
-PASS event.target.result is non-null.
-PASS event.target.result.direction is "prev"
-store.openCursor(IDBKeyRange.only(0), IDBCursor.PREV_NO_DUPLICATE)
 PASS event.target.result is non-null.
 PASS event.target.result.direction is "prevunique"
 index.openCursor()
@@ -119,18 +67,6 @@ PASS event.target.result.direction is "prev"
 index.openCursor(0, 'prevunique')
 PASS event.target.result is non-null.
 PASS event.target.result.direction is "prevunique"
-index.openCursor(0, IDBCursor.NEXT)
-PASS event.target.result is non-null.
-PASS event.target.result.direction is "next"
-index.openCursor(0, IDBCursor.NEXT_NO_DUPLICATE)
-PASS event.target.result is non-null.
-PASS event.target.result.direction is "nextunique"
-index.openCursor(0, IDBCursor.PREV)
-PASS event.target.result is non-null.
-PASS event.target.result.direction is "prev"
-index.openCursor(0, IDBCursor.PREV_NO_DUPLICATE)
-PASS event.target.result is non-null.
-PASS event.target.result.direction is "prevunique"
 index.openCursor(IDBKeyRange.only(0))
 PASS event.target.result is non-null.
 PASS event.target.result.direction is "next"
@@ -144,18 +80,6 @@ index.openCursor(IDBKeyRange.only(0), 'prev')
 PASS event.target.result is non-null.
 PASS event.target.result.direction is "prev"
 index.openCursor(IDBKeyRange.only(0), 'prevunique')
-PASS event.target.result is non-null.
-PASS event.target.result.direction is "prevunique"
-index.openCursor(IDBKeyRange.only(0), IDBCursor.NEXT)
-PASS event.target.result is non-null.
-PASS event.target.result.direction is "next"
-index.openCursor(IDBKeyRange.only(0), IDBCursor.NEXT_NO_DUPLICATE)
-PASS event.target.result is non-null.
-PASS event.target.result.direction is "nextunique"
-index.openCursor(IDBKeyRange.only(0), IDBCursor.PREV)
-PASS event.target.result is non-null.
-PASS event.target.result.direction is "prev"
-index.openCursor(IDBKeyRange.only(0), IDBCursor.PREV_NO_DUPLICATE)
 PASS event.target.result is non-null.
 PASS event.target.result.direction is "prevunique"
 index.openKeyCursor()
@@ -176,18 +100,6 @@ PASS event.target.result.direction is "prev"
 index.openKeyCursor(0, 'prevunique')
 PASS event.target.result is non-null.
 PASS event.target.result.direction is "prevunique"
-index.openKeyCursor(0, IDBCursor.NEXT)
-PASS event.target.result is non-null.
-PASS event.target.result.direction is "next"
-index.openKeyCursor(0, IDBCursor.NEXT_NO_DUPLICATE)
-PASS event.target.result is non-null.
-PASS event.target.result.direction is "nextunique"
-index.openKeyCursor(0, IDBCursor.PREV)
-PASS event.target.result is non-null.
-PASS event.target.result.direction is "prev"
-index.openKeyCursor(0, IDBCursor.PREV_NO_DUPLICATE)
-PASS event.target.result is non-null.
-PASS event.target.result.direction is "prevunique"
 index.openKeyCursor(IDBKeyRange.only(0))
 PASS event.target.result is non-null.
 PASS event.target.result.direction is "next"
@@ -201,18 +113,6 @@ index.openKeyCursor(IDBKeyRange.only(0), 'prev')
 PASS event.target.result is non-null.
 PASS event.target.result.direction is "prev"
 index.openKeyCursor(IDBKeyRange.only(0), 'prevunique')
-PASS event.target.result is non-null.
-PASS event.target.result.direction is "prevunique"
-index.openKeyCursor(IDBKeyRange.only(0), IDBCursor.NEXT)
-PASS event.target.result is non-null.
-PASS event.target.result.direction is "next"
-index.openKeyCursor(IDBKeyRange.only(0), IDBCursor.NEXT_NO_DUPLICATE)
-PASS event.target.result is non-null.
-PASS event.target.result.direction is "nextunique"
-index.openKeyCursor(IDBKeyRange.only(0), IDBCursor.PREV)
-PASS event.target.result is non-null.
-PASS event.target.result.direction is "prev"
-index.openKeyCursor(IDBKeyRange.only(0), IDBCursor.PREV_NO_DUPLICATE)
 PASS event.target.result is non-null.
 PASS event.target.result.direction is "prevunique"
 PASS successfullyParsed is true

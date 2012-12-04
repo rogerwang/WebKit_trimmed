@@ -5,24 +5,13 @@ if (this.importScripts) {
 
 description("Test IndexedDB workers, recursion, and transaction termination.");
 
-function test()
+indexedDBTest(prepareDatabase, createTransaction);
+function prepareDatabase(evt)
 {
-    removeVendorPrefixes();
-
-    evalAndLog("request = indexedDB.open('transaction-complete-worker')");
-    request.onerror = unexpectedErrorCallback;
-    request.onsuccess = function () {
-        evalAndLog("db = request.result");
-        evalAndLog("request = db.setVersion('1')");
-        request.onerror = unexpectedErrorCallback;
-        request.onblocked = unexpectedBlockedCallback;
-        request.onsuccess = function () {
-            deleteAllObjectStores(db);
-            evalAndLog("trans = request.result");
-            evalAndLog("db.createObjectStore('store')");
-            trans.oncomplete = createTransaction;
-        };
-    };
+    preamble(evt);
+    db = event.target.result;
+    event.target.transaction.onabort = unexpectedAbortCallback;
+    evalAndLog("db.createObjectStore('store')");
 }
 
 function createTransaction()
@@ -39,7 +28,7 @@ function createTransaction()
 function emptyTransactionCompleted()
 {
     testPassed("Transaction completed");
-    evalAndExpectException("store.get(0)", "IDBDatabaseException.TRANSACTION_INACTIVE_ERR", "'TransactionInactiveError'");
+    evalAndExpectException("store.get(0)", "0", "'TransactionInactiveError'");
     recursionTest();
 }
 
@@ -72,7 +61,7 @@ function recurse(count)
 function transactionCompleted()
 {
     testPassed("transaction completed");
-    evalAndExpectException("store.get(0)", "IDBDatabaseException.TRANSACTION_INACTIVE_ERR", "'TransactionInactiveError'");
+    evalAndExpectException("store.get(0)", "0", "'TransactionInactiveError'");
 
     debug("");
     debug("trying a timeout callback:");
@@ -89,7 +78,7 @@ function timeoutTest()
     transaction.onabort = unexpectedAbortCallback;
     transaction.oncomplete = function () {
         testPassed("transaction started in setTimeout() callback completed");
-        evalAndExpectException("store.get(0)", "IDBDatabaseException.TRANSACTION_INACTIVE_ERR", "'TransactionInactiveError'");
+        evalAndExpectException("store.get(0)", "0", "'TransactionInactiveError'");
 
         errorTest();
     };
@@ -121,8 +110,6 @@ function errorHandler(e)
 function errorTransactionCompleted()
 {
     testPassed("Transaction completed");
-    evalAndExpectException("store.get(0)", "IDBDatabaseException.TRANSACTION_INACTIVE_ERR", "'TransactionInactiveError'");
+    evalAndExpectException("store.get(0)", "0", "'TransactionInactiveError'");
     finishJSTest();
 }
-
-test();

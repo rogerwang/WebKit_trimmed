@@ -116,8 +116,8 @@ password: "SECRETSAUCE"
         executive_mock = Mock()
         credentials = MockedCredentials("example.com", executive=executive_mock)
 
-        expected_stderr = "Reading Keychain for example.com account and password.  Click \"Allow\" to continue...\n"
-        OutputCapture().assert_outputs(self, credentials._run_security_tool, [username], expected_stderr=expected_stderr)
+        expected_logs = "Reading Keychain for example.com account and password.  Click \"Allow\" to continue...\n"
+        OutputCapture().assert_outputs(self, credentials._run_security_tool, [username], expected_logs=expected_logs)
 
         security_args = ["/usr/bin/security", "find-internet-password", "-g", "-s", "example.com"]
         if username:
@@ -135,8 +135,8 @@ password: "SECRETSAUCE"
         os.environ['WEBKIT_BUGZILLA_USERNAME'] = "foo"
         os.environ['WEBKIT_BUGZILLA_PASSWORD'] = "bar"
         username, password = credentials._credentials_from_environment()
-        self.assertEquals(username, "foo")
-        self.assertEquals(password, "bar")
+        self.assertEqual(username, "foo")
+        self.assertEqual(password, "bar")
         os.environ = saved_environ
 
     def test_read_credentials_without_git_repo(self):

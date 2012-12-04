@@ -34,6 +34,7 @@
 #include "WebProcessProxy.h"
 #include <WebCore/FileSystem.h>
 #include <WebCore/GtkUtilities.h>
+#include <WebCore/NotImplemented.h>
 #include <glib/gi18n-lib.h>
 #include <gtk/gtk.h>
 #include <wtf/gobject/GOwnPtr.h>
@@ -92,7 +93,7 @@ void WebInspectorProxy::createInspectorWindow()
     gtk_window_set_title(GTK_WINDOW(m_inspectorWindow), _("Web Inspector"));
     gtk_window_set_default_size(GTK_WINDOW(m_inspectorWindow), initialWindowWidth, initialWindowHeight);
 
-    gtk_container_add(GTK_CONTAINER(m_inspectorWindow), m_inspectorView);
+    webkitWebViewBaseAddWebInspector(WEBKIT_WEB_VIEW_BASE(m_inspectorWindow), m_inspectorView);
     gtk_widget_show(m_inspectorView);
 
     g_object_add_weak_pointer(G_OBJECT(m_inspectorWindow), reinterpret_cast<void**>(&m_inspectorWindow));
@@ -219,6 +220,11 @@ void WebInspectorProxy::platformSetAttachedWindowHeight(unsigned height)
 
     m_client.didChangeAttachedHeight(this, height);
     webkitWebViewBaseSetInspectorViewHeight(WEBKIT_WEB_VIEW_BASE(m_page->viewWidget()), height);
+}
+
+void WebInspectorProxy::platformAttachAvailabilityChanged(bool)
+{
+    notImplemented();
 }
 
 } // namespace WebKit

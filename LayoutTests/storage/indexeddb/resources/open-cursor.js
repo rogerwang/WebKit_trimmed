@@ -32,7 +32,7 @@ function cursorWithKeySuccess()
     shouldBeEqualToString("cursor.value", "myValue");
     debug("");
     debug("Passing an invalid key into .continue({}).");
-    evalAndExpectException("cursor.continue({})", "IDBDatabaseException.DATA_ERR", "'DataError'");
+    evalAndExpectException("cursor.continue({})", "0", "'DataError'");
     debug("");
     openEmptyCursorWithKey();
 }
@@ -72,7 +72,7 @@ function cursorSuccess()
     shouldBeEqualToString("cursor.value", "myValue");
     debug("");
     debug("Passing an invalid key into .continue({}).");
-    evalAndExpectException("event.target.result.continue({})", "IDBDatabaseException.DATA_ERR", "'DataError'");
+    evalAndExpectException("event.target.result.continue({})", "0", "'DataError'");
     debug("");
     openEmptyCursor();
 }
@@ -86,36 +86,13 @@ function openCursor()
     request.onerror = unexpectedErrorCallback;
 }
 
-function setVersionSuccess()
+indexedDBTest(prepareDatabase);
+function prepareDatabase()
 {
-    debug("setVersionSuccess():");
-    self.trans = evalAndLog("trans = event.target.result");
-    shouldBeNonNull("trans");
-    trans.onabort = unexpectedAbortCallback;
-
-    deleteAllObjectStores(db);
-
+    db = event.target.result;
+    event.target.transaction.onabort = unexpectedAbortCallback;
     var objectStore = evalAndLog("objectStore = db.createObjectStore('test')");
     request = evalAndLog("objectStore.add('myValue', 'myKey')");
     request.onsuccess = openCursor;
     request.onerror = unexpectedErrorCallback;
 }
-
-function openSuccess()
-{
-    var db = evalAndLog("db = event.target.result");
-
-    request = evalAndLog("db.setVersion('new version')");
-    request.onsuccess = setVersionSuccess;
-    request.onerror = unexpectedErrorCallback;
-}
-
-function test()
-{
-    removeVendorPrefixes();
-    request = evalAndLog("indexedDB.open('open-cursor')");
-    request.onsuccess = openSuccess;
-    request.onerror = unexpectedErrorCallback;
-}
-
-test();

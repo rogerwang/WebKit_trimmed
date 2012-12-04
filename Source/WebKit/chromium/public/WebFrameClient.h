@@ -50,6 +50,7 @@ namespace WebKit {
 
 class WebApplicationCacheHost;
 class WebApplicationCacheHostClient;
+class WebCachedURLRequest;
 class WebCookieJar;
 class WebDataSource;
 class WebDOMEvent;
@@ -251,6 +252,9 @@ public:
      // the client keeps such an association.
      virtual void removeIdentifierForRequest(unsigned identifier) { }
 
+    // An element will request a resource.
+    virtual void willRequestResource(WebFrame*, const WebCachedURLRequest&) { }
+
     // A request is about to be sent out, and the client may modify it.  Request
     // is writable, and changes to the URL, for example, will change the request
     // made.  If this request is the result of a redirect, then redirectResponse
@@ -422,6 +426,19 @@ public:
     // URL. Non-empty strings indicate an override should be used. Otherwise,
     // Platform::current()->userAgent() will be called to provide one.
     virtual WebString userAgentOverride(WebFrame*, const WebURL& url) { return WebString(); }
+
+    // WebGL ------------------------------------------------------
+
+    // Asks the embedder whether WebGL is allowed for the given WebFrame.
+    // This call is placed here instead of WebPermissionClient because this
+    // class is implemented in content/, and putting it here avoids adding
+    // more public content/ APIs.
+    virtual bool allowWebGL(WebFrame*, bool defaultValue) { return defaultValue; }
+
+    // Notifies the client that a WebGL context was lost on this page with the
+    // given reason (one of the GL_ARB_robustness status codes; see
+    // Extensions3D.h in WebCore/platform/graphics).
+    virtual void didLoseWebGLContext(WebFrame*, int) { }
 
 protected:
     ~WebFrameClient() { }

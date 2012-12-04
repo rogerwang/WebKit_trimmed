@@ -107,6 +107,7 @@ public:
     void setShouldTrackVisitedLinks(bool);
     void setAlwaysAcceptCookies(bool);
     void removeAllVisitedLinks();
+    void setCacheModel(uint32_t);
     void activateMacFontAscentHack();
     void overrideBoolPreferenceForTestRunner(WebPageGroupProxy*, const String& preference, bool enabled);
     void overrideXSSAuditorEnabledForTestRunner(WebPageGroupProxy* pageGroup, bool enabled);
@@ -179,6 +180,7 @@ public:
     void setTabKeyCyclesThroughElements(WebPage*, bool enabled);
     void setSerialLoadingEnabled(bool);
     void setShadowDOMEnabled(bool);
+    void setCSSRegionsEnabled(bool);
     void dispatchPendingLoadRequests();
 
 private:

@@ -31,13 +31,15 @@
 import unittest
 
 from webkitpy.common.host_mock import MockHost
+from webkitpy.common.system.systemhost_mock import MockSystemHost
 from webkitpy.layout_tests import run_webkit_tests
+from webkitpy.layout_tests.controllers.layout_test_runner import LayoutTestRunner, Sharder, TestRunInterruptedException
 from webkitpy.layout_tests.models import test_expectations
 from webkitpy.layout_tests.models import test_failures
 from webkitpy.layout_tests.models.result_summary import ResultSummary
 from webkitpy.layout_tests.models.test_input import TestInput
 from webkitpy.layout_tests.models.test_results import TestResult
-from webkitpy.layout_tests.controllers.layout_test_runner import LayoutTestRunner, Sharder, TestRunInterruptedException
+from webkitpy.layout_tests.port.test import TestPort
 
 
 TestExpectations = test_expectations.TestExpectations
@@ -75,14 +77,14 @@ class LockCheckingRunner(LayoutTestRunner):
 
     def handle_finished_list(self, source, list_name, num_tests, elapsed_time):
         if not self._finished_list_called:
-            self._tester.assertEquals(list_name, 'locked_tests')
+            self._tester.assertEqual(list_name, 'locked_tests')
             self._tester.assertTrue(self._remaining_locked_shards)
             self._tester.assertTrue(self._has_http_lock is self._should_have_http_lock)
 
         super(LockCheckingRunner, self).handle_finished_list(source, list_name, num_tests, elapsed_time)
 
         if not self._finished_list_called:
-            self._tester.assertEquals(self._remaining_locked_shards, [])
+            self._tester.assertEqual(self._remaining_locked_shards, [])
             self._tester.assertFalse(self._has_http_lock)
             self._finished_list_called = True
 
@@ -136,8 +138,8 @@ class LayoutTestRunnerTests(unittest.TestCase):
         # Interrupt if we've exceeded either limit:
         runner._options.exit_after_n_crashes_or_timeouts = 10
         self.assertRaises(TestRunInterruptedException, runner._interrupt_if_at_failure_limits, result_summary)
-        self.assertEquals(result_summary.results['passes/text.html'].type, test_expectations.SKIP)
-        self.assertEquals(result_summary.results['passes/image.html'].type, test_expectations.SKIP)
+        self.assertEqual(result_summary.results['passes/text.html'].type, test_expectations.SKIP)
+        self.assertEqual(result_summary.results['passes/image.html'].type, test_expectations.SKIP)
 
         runner._options.exit_after_n_crashes_or_timeouts = None
         runner._options.exit_after_n_failures = 10
@@ -154,14 +156,14 @@ class LayoutTestRunnerTests(unittest.TestCase):
         result_summary = ResultSummary(expectations, [test], 1, set())
         result = TestResult(test_name=test, failures=[test_failures.FailureReftestMismatchDidNotOccur()], reftest_type=['!='])
         runner._update_summary_with_result(result_summary, result)
-        self.assertEquals(1, result_summary.expected)
-        self.assertEquals(0, result_summary.unexpected)
+        self.assertEqual(1, result_summary.expected)
+        self.assertEqual(0, result_summary.unexpected)
 
         result_summary = ResultSummary(expectations, [test], 1, set())
         result = TestResult(test_name=test, failures=[], reftest_type=['=='])
         runner._update_summary_with_result(result_summary, result)
-        self.assertEquals(0, result_summary.expected)
-        self.assertEquals(1, result_summary.unexpected)
+        self.assertEqual(0, result_summary.expected)
+        self.assertEqual(1, result_summary.unexpected)
 
     def test_servers_started(self):
 
@@ -189,31 +191,31 @@ class LayoutTestRunnerTests(unittest.TestCase):
         runner._needs_http = True
         runner._needs_websockets = False
         runner.start_servers_with_lock(number_of_servers=4)
-        self.assertEquals(self.http_started, True)
-        self.assertEquals(self.websocket_started, False)
+        self.assertEqual(self.http_started, True)
+        self.assertEqual(self.websocket_started, False)
         runner.stop_servers_with_lock()
-        self.assertEquals(self.http_stopped, True)
-        self.assertEquals(self.websocket_stopped, False)
+        self.assertEqual(self.http_stopped, True)
+        self.assertEqual(self.websocket_stopped, False)
 
         self.http_started = self.http_stopped = self.websocket_started = self.websocket_stopped = False
         runner._needs_http = True
         runner._needs_websockets = True
         runner.start_servers_with_lock(number_of_servers=4)
-        self.assertEquals(self.http_started, True)
-        self.assertEquals(self.websocket_started, True)
+        self.assertEqual(self.http_started, True)
+        self.assertEqual(self.websocket_started, True)
         runner.stop_servers_with_lock()
-        self.assertEquals(self.http_stopped, True)
-        self.assertEquals(self.websocket_stopped, True)
+        self.assertEqual(self.http_stopped, True)
+        self.assertEqual(self.websocket_stopped, True)
 
         self.http_started = self.http_stopped = self.websocket_started = self.websocket_stopped = False
         runner._needs_http = False
         runner._needs_websockets = False
         runner.start_servers_with_lock(number_of_servers=4)
-        self.assertEquals(self.http_started, False)
-        self.assertEquals(self.websocket_started, False)
+        self.assertEqual(self.http_started, False)
+        self.assertEqual(self.websocket_started, False)
         runner.stop_servers_with_lock()
-        self.assertEquals(self.http_stopped, False)
-        self.assertEquals(self.websocket_stopped, False)
+        self.assertEqual(self.http_stopped, False)
+        self.assertEqual(self.websocket_stopped, False)
 
 
 class SharderTests(unittest.TestCase):
@@ -235,21 +237,17 @@ class SharderTests(unittest.TestCase):
         return TestInput(test_file, requires_lock=(test_file.startswith('http') or test_file.startswith('perf')))
 
     def get_shards(self, num_workers, fully_parallel, test_list=None, max_locked_shards=1):
-        def split(test_name):
-            idx = test_name.rfind('/')
-            if idx != -1:
-                return (test_name[0:idx], test_name[idx + 1:])
-
-        self.sharder = Sharder(split, '/', max_locked_shards)
+        port = TestPort(MockSystemHost())
+        self.sharder = Sharder(port.split_test, max_locked_shards)
         test_list = test_list or self.test_list
         return self.sharder.shard_tests([self.get_test_input(test) for test in test_list], num_workers, fully_parallel)
 
     def assert_shards(self, actual_shards, expected_shard_names):
-        self.assertEquals(len(actual_shards), len(expected_shard_names))
+        self.assertEqual(len(actual_shards), len(expected_shard_names))
         for i, shard in enumerate(actual_shards):
             expected_shard_name, expected_test_names = expected_shard_names[i]
-            self.assertEquals(shard.name, expected_shard_name)
-            self.assertEquals([test_input.test_name for test_input in shard.test_inputs],
+            self.assertEqual(shard.name, expected_shard_name)
+            self.assertEqual([test_input.test_name for test_input in shard.test_inputs],
                               expected_test_names)
 
     def test_shard_by_dir(self):
@@ -307,14 +305,14 @@ class SharderTests(unittest.TestCase):
     def test_shard_in_two_has_no_locked_shards(self):
         locked, unlocked = self.get_shards(num_workers=1, fully_parallel=False,
              test_list=['animations/keyframe.html'])
-        self.assertEquals(len(locked), 0)
-        self.assertEquals(len(unlocked), 1)
+        self.assertEqual(len(locked), 0)
+        self.assertEqual(len(unlocked), 1)
 
     def test_shard_in_two_has_no_unlocked_shards(self):
         locked, unlocked = self.get_shards(num_workers=1, fully_parallel=False,
              test_list=['http/tests/websocket/tests/unicode.htm'])
-        self.assertEquals(len(locked), 1)
-        self.assertEquals(len(unlocked), 0)
+        self.assertEqual(len(locked), 1)
+        self.assertEqual(len(unlocked), 0)
 
     def test_multiple_locked_shards(self):
         locked, unlocked = self.get_shards(num_workers=4, fully_parallel=False, max_locked_shards=2)
@@ -335,48 +333,3 @@ class SharderTests(unittest.TestCase):
                'http/tests/websocket/tests/websocket-protocol-ignored.html',
                'http/tests/xmlhttprequest/supported-xml-content-types.html',
                'perf/object-keys.html'])])
-
-
-class NaturalCompareTest(unittest.TestCase):
-    def assert_cmp(self, x, y, result):
-        self.assertEquals(cmp(Sharder.natural_sort_key(x), Sharder.natural_sort_key(y)), result)
-
-    def test_natural_compare(self):
-        self.assert_cmp('a', 'a', 0)
-        self.assert_cmp('ab', 'a', 1)
-        self.assert_cmp('a', 'ab', -1)
-        self.assert_cmp('', '', 0)
-        self.assert_cmp('', 'ab', -1)
-        self.assert_cmp('1', '2', -1)
-        self.assert_cmp('2', '1', 1)
-        self.assert_cmp('1', '10', -1)
-        self.assert_cmp('2', '10', -1)
-        self.assert_cmp('foo_1.html', 'foo_2.html', -1)
-        self.assert_cmp('foo_1.1.html', 'foo_2.html', -1)
-        self.assert_cmp('foo_1.html', 'foo_10.html', -1)
-        self.assert_cmp('foo_2.html', 'foo_10.html', -1)
-        self.assert_cmp('foo_23.html', 'foo_10.html', 1)
-        self.assert_cmp('foo_23.html', 'foo_100.html', -1)
-
-
-class KeyCompareTest(unittest.TestCase):
-    def setUp(self):
-        def split(test_name):
-            idx = test_name.rfind('/')
-            if idx != -1:
-                return (test_name[0:idx], test_name[idx + 1:])
-
-        self.sharder = Sharder(split, '/', 1)
-
-    def assert_cmp(self, x, y, result):
-        self.assertEquals(cmp(self.sharder.test_key(x), self.sharder.test_key(y)), result)
-
-    def test_test_key(self):
-        self.assert_cmp('/a', '/a', 0)
-        self.assert_cmp('/a', '/b', -1)
-        self.assert_cmp('/a2', '/a10', -1)
-        self.assert_cmp('/a2/foo', '/a10/foo', -1)
-        self.assert_cmp('/a/foo11', '/a/foo2', 1)
-        self.assert_cmp('/ab', '/a/a/b', -1)
-        self.assert_cmp('/a/a/b', '/ab', 1)
-        self.assert_cmp('/foo-bar/baz', '/foo/baz', -1)
