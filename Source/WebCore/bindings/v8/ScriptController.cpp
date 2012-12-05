@@ -73,6 +73,9 @@
 #include <wtf/text/CString.h>
 #include <wtf/text/StringBuilder.h>
 
+#include "third_party/node/src/node.h"
+#include "third_party/node/src/req_wrap.h"
+
 #if PLATFORM(CHROMIUM)
 #include "TraceEvent.h"
 #endif
@@ -418,6 +421,8 @@ void ScriptController::evaluateInIsolatedWorld(int worldID, const Vector<ScriptS
 
 bool ScriptController::shouldBypassMainWorldContentSecurityPolicy()
 {
+    if (v8::Context::GetEntered() == node::g_context)
+        return true;
     if (DOMWrapperWorld* world = worldForEnteredContextIfIsolated())
         return world->isolatedWorldHasContentSecurityPolicy();
     return false;
