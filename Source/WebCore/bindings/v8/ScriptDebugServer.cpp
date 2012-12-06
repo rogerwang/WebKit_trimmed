@@ -380,8 +380,18 @@ void ScriptDebugServer::dispatchDidParseSource(ScriptDebugListener* listener, v8
     String sourceID = toWebCoreStringWithUndefinedOrNullCheck(object->Get(v8::String::New("id")));
 
     ScriptDebugListener::Script script;
+    v8::Handle<v8::String> v8String;
     script.url = toWebCoreStringWithUndefinedOrNullCheck(object->Get(v8::String::New("name")));
-    script.source = toWebCoreStringWithUndefinedOrNullCheck(object->Get(v8::String::New("source")));
+
+    v8String = object->Get(v8::String::New("source"))->ToString();
+    int length = v8String->Length();
+    script.source = StringTraits<String>::fromV8String<false>(v8String, length);
+#if 0
+    UChar* buffer;
+    String source = String::createUninitialized(length, buffer);
+    v8String->Write(reinterpret_cast<uint16_t*>(buffer), 0, length);
+    script.source = source;
+#endif
     script.sourceMappingURL = toWebCoreStringWithUndefinedOrNullCheck(object->Get(v8::String::New("sourceMappingURL")));
     script.startLine = object->Get(v8::String::New("startLine"))->ToInteger()->Value();
     script.startColumn = object->Get(v8::String::New("startColumn"))->ToInteger()->Value();

@@ -49,41 +49,6 @@ void WebCoreStringResourceBase::visitStrings(ExternalStringVisitor* visitor)
         visitor->visitJSExternalString(m_atomicString.impl());
 }
 
-template<class StringClass> struct StringTraits {
-    static const StringClass& fromStringResource(WebCoreStringResourceBase*);
-    static bool is16BitAtomicString(StringClass&);
-    template<bool ascii>
-    static StringClass fromV8String(v8::Handle<v8::String>, int);
-};
-
-template<>
-struct StringTraits<String> {
-    static const String& fromStringResource(WebCoreStringResourceBase* resource)
-    {
-        return resource->webcoreString();
-    }
-    static bool is16BitAtomicString(String& string)
-    {
-        return false;
-    }
-    template<bool ascii>
-    static String fromV8String(v8::Handle<v8::String>, int);
-};
-
-template<>
-struct StringTraits<AtomicString> {
-    static const AtomicString& fromStringResource(WebCoreStringResourceBase* resource)
-    {
-        return resource->atomicString();
-    }
-    static bool is16BitAtomicString(AtomicString& string)
-    {
-        return !string.string().is8Bit();
-    }
-    template<bool ascii>
-    static AtomicString fromV8String(v8::Handle<v8::String>, int);
-};
-
 template<>
 String StringTraits<String>::fromV8String<false>(v8::Handle<v8::String> v8String, int length)
 {
@@ -135,6 +100,7 @@ AtomicString StringTraits<AtomicString>::fromV8String<true>(v8::Handle<v8::Strin
     v8String->WriteAscii(reinterpret_cast<char*>(buffer), 0, length, v8::String::PRESERVE_ASCII_NULL);
     return AtomicString(string);
 }
+
 
 template<typename StringType>
 StringType v8StringToWebCoreString(v8::Handle<v8::String> v8String, ExternalMode external)
