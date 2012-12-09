@@ -66,6 +66,9 @@
 #include <wtf/StdLibExtras.h>
 #include <wtf/UnusedParam.h>
 
+#include "third_party/node/src/node.h"
+#include "third_party/node/src/req_wrap.h"
+
 namespace WebCore {
 
 void V8DOMWrapper::setNamedHiddenReference(v8::Handle<v8::Object> parent, const char* name, v8::Handle<v8::Value> child)
@@ -185,6 +188,10 @@ PassRefPtr<EventListener> V8DOMWrapper::getEventListener(v8::Local<v8::Value> va
         return 0;
     if (lookup == ListenerFindOnly)
         return V8EventListenerList::findWrapper(value, isAttribute);
+    if (context == node::g_context) {
+        DOMWindow* window = toDOMWindow(context);
+        context = ScriptController::mainWorldContext(window->frame());
+    }
     if (isWrapperOfType(toInnerGlobalObject(context), &V8DOMWindow::info))
         return V8EventListenerList::findOrCreateWrapper<V8EventListener>(value, isAttribute);
 #if ENABLE(WORKERS)

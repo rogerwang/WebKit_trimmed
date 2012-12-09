@@ -36,6 +36,9 @@
 #include "V8DOMWindow.h"
 #include "V8DOMWindowShell.h"
 
+#include "third_party/node/src/node.h"
+#include "third_party/node/src/req_wrap.h"
+
 namespace WebCore {
 
 WorldContextHandle::WorldContextHandle(WorldToUse worldToUse)
@@ -49,6 +52,10 @@ WorldContextHandle::WorldContextHandle(WorldToUse worldToUse)
     if (v8::Context::InContext()) {
         v8::Handle<v8::Context> context = v8::Context::GetCurrent();
         if (!context.IsEmpty()) {
+            if (context == node::g_context) {
+                m_worldToUse = UseMainWorld;
+                return;
+            }
             if (UNLIKELY(!V8DOMWrapper::isWrapperOfType(toInnerGlobalObject(context), &V8DOMWindow::info))) {
                 m_worldToUse = UseWorkerWorld;
                 return;
