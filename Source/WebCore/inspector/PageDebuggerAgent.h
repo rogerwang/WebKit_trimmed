@@ -47,11 +47,11 @@ class PageDebuggerAgent : public InspectorDebuggerAgent {
 public:
     static PassOwnPtr<PageDebuggerAgent> create(InstrumentingAgents*, InspectorState*, Page*, InjectedScriptManager*, InspectorOverlay*);
     virtual ~PageDebuggerAgent();
+    virtual PageScriptDebugServer& scriptDebugServer();
 
 private:
     virtual void startListeningScriptDebugServer();
     virtual void stopListeningScriptDebugServer();
-    virtual PageScriptDebugServer& scriptDebugServer();
     virtual void muteConsole();
     virtual void unmuteConsole();
 

@@ -110,23 +110,7 @@ void PageScriptDebugServer::addListener(ScriptDebugListener* listener, Page* pag
     }
     m_listenersMap.set(page, listener);
 
-    V8DOMWindowShell* shell = scriptController->existingWindowShell(mainThreadNormalWorld());
-    if (!shell || !shell->isContextInitialized())
-        return;
-    v8::Handle<v8::Context> context = shell->context();
-    v8::Handle<v8::Function> getScriptsFunction = v8::Local<v8::Function>::Cast(m_debuggerScript.get()->Get(v8::String::New("getScripts")));
-    v8::Handle<v8::Value> argv[] = { context->GetData() };
-    v8::Handle<v8::Value> value;
-    {
-        V8RecursionScope::MicrotaskSuppression scope;
-        value = getScriptsFunction->Call(m_debuggerScript.get(), 1, argv);
-    }
-    if (value.IsEmpty())
-        return;
-    ASSERT(!value->IsUndefined() && value->IsArray());
-    v8::Handle<v8::Array> scriptsArray = v8::Handle<v8::Array>::Cast(value);
-    for (unsigned i = 0; i < scriptsArray->Length(); ++i)
-        dispatchDidParseSource(listener, v8::Handle<v8::Object>::Cast(scriptsArray->Get(v8Integer(i))));
+    rescanScripts(page->mainFrame());
 }
 
 void PageScriptDebugServer::removeListener(ScriptDebugListener* listener, Page* page)
@@ -209,6 +193,38 @@ void PageScriptDebugServer::runMessageLoopOnPause(v8::Handle<v8::Context> contex
 void PageScriptDebugServer::quitMessageLoopOnPause()
 {
     m_clientMessageLoop->quitNow();
+}
+
+void PageScriptDebugServer::rescanScripts(Frame* frame)
+{
+    ScriptDebugListener* listener = m_listenersMap.get(frame->page());
+    if (!listener)
+        return;
+    ScriptController* scriptController = frame->script();
+    if (!scriptController->canExecuteScripts(NotAboutToExecuteScript))
+        return;
+
+    v8::HandleScope scope;
+    v8::Local<v8::Context> debuggerContext = v8::Debug::GetDebugContext();
+    v8::Context::Scope contextScope(debuggerContext);
+
+    V8DOMWindowShell* shell = scriptController->existingWindowShell(mainThreadNormalWorld());
+    if (!shell || !shell->isContextInitialized())
+        return;
+    v8::Handle<v8::Context> context = shell->context();
+    v8::Handle<v8::Function> getScriptsFunction = v8::Local<v8::Function>::Cast(m_debuggerScript.get()->Get(v8::String::New("getScripts")));
+    v8::Handle<v8::Value> argv[] = { context->GetData() };
+    v8::Handle<v8::Value> value;
+    {
+        V8RecursionScope::MicrotaskSuppression scope;
+        value = getScriptsFunction->Call(m_debuggerScript.get(), 1, argv);
+    }
+    if (value.IsEmpty())
+        return;
+    ASSERT(!value->IsUndefined() && value->IsArray());
+    v8::Handle<v8::Array> scriptsArray = v8::Handle<v8::Array>::Cast(value);
+    for (unsigned i = 0; i < scriptsArray->Length(); ++i)
+        dispatchDidParseSource(listener, v8::Handle<v8::Object>::Cast(scriptsArray->Get(v8Integer(i))));
 }
 
 } // namespace WebCore

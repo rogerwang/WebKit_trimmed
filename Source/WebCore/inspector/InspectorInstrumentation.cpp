@@ -60,6 +60,7 @@
 #include "InspectorTimelineAgent.h"
 #include "InspectorWorkerAgent.h"
 #include "InstrumentingAgents.h"
+#include "PageDebuggerAgent.h"
 #include "PageRuntimeAgent.h"
 #include "ScriptArguments.h"
 #include "ScriptCallStack.h"
@@ -121,8 +122,10 @@ void InspectorInstrumentation::didClearWindowObjectInWorldImpl(InstrumentingAgen
         inspectorAgent->didClearWindowObjectInWorld(frame, world);
 #if ENABLE(JAVASCRIPT_DEBUGGER)
     if (InspectorDebuggerAgent* debuggerAgent = instrumentingAgents->inspectorDebuggerAgent()) {
-        if (pageAgent && world == mainThreadNormalWorld() && frame == pageAgent->mainFrame())
+        if (pageAgent && world == mainThreadNormalWorld() && frame == pageAgent->mainFrame()) {
             debuggerAgent->didClearMainFrameWindowObject();
+            PageScriptDebugServer::shared().rescanScripts(frame);
+        }
     }
 #endif
     if (PageRuntimeAgent* pageRuntimeAgent = instrumentingAgents->pageRuntimeAgent()) {
