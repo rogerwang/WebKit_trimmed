@@ -37,6 +37,9 @@
 #include "V8DedicatedWorkerContext.h"
 #include "V8SharedWorkerContext.h"
 
+#include "third_party/node/src/node.h"
+#include "third_party/node/src/req_wrap.h"
+
 namespace WebCore {
 
 WorldContextHandle::WorldContextHandle(WorldToUse worldToUse)
@@ -51,6 +54,10 @@ WorldContextHandle::WorldContextHandle(WorldToUse worldToUse)
         CRASH();
 
     v8::Handle<v8::Context> context = v8::Context::GetCurrent();
+    if (context == node::g_context) {
+        m_worldToUse = UseMainWorld;
+        return;
+    }
 #if ENABLE(WORKERS)
     if (UNLIKELY(!V8DOMWrapper::isWrapperOfType(toInnerGlobalObject(context), &V8DOMWindow::info))) {
 #if ENABLE(SHARED_WORKERS)

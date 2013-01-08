@@ -169,6 +169,14 @@ void FrameLoaderClientImpl::willReleaseScriptContext(v8::Handle<v8::Context> con
     if (m_webFrame->client())
         m_webFrame->client()->willReleaseScriptContext(m_webFrame, context, worldId);
 }
+
+bool FrameLoaderClientImpl::willSetSecurityToken(v8::Handle<v8::Context> context)
+{
+    if (m_webFrame->client())
+        return m_webFrame->client()->willSetSecurityToken(m_webFrame, context);
+    else
+        return false;
+}
 #endif
 
 bool FrameLoaderClientImpl::allowScriptExtension(const String& extensionName,

@@ -206,8 +206,17 @@ static void internalAddMessage(Page* page, MessageType type, MessageLevel level,
     if (!page->settings() || page->settings()->privateBrowsingEnabled())
         return;
 
-    if (gotMessage)
+    if (gotMessage) {
+        for (unsigned i = 1; i < arguments->argumentCount(); ++i) {
+            String argAsString;
+            if (arguments->argumentAt(i).getString(arguments->globalState(), argAsString)) {
+                message.append(" ");
+                message.append(argAsString);
+            }
+        }
+
         page->chrome()->client()->addMessageToConsole(ConsoleAPIMessageSource, type, level, message, lastCaller.lineNumber(), lastCaller.sourceURL());
+    }
 
     if (printExceptions) {
         printSourceURLAndLine(lastCaller.sourceURL(), 0);

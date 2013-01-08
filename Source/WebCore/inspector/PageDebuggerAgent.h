@@ -53,11 +53,11 @@ public:
     virtual void disable(ErrorString*);
 
     void didClearMainFrameWindowObject();
+    virtual PageScriptDebugServer& scriptDebugServer();
 
 private:
     virtual void startListeningScriptDebugServer();
     virtual void stopListeningScriptDebugServer();
-    virtual PageScriptDebugServer& scriptDebugServer();
     virtual void muteConsole();
     virtual void unmuteConsole();
 

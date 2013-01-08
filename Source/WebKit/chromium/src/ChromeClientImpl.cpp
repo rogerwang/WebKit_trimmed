@@ -717,10 +717,12 @@ void ChromeClientImpl::runOpenPanel(Frame* frame, PassRefPtr<FileChooser> fileCh
     WebFileChooserParams params;
     params.multiSelect = fileChooser->settings().allowsMultipleFiles;
 #if ENABLE(DIRECTORY_UPLOAD)
-    params.directory = fileChooser->settings().allowsDirectoryUpload;
+    params.directory = fileChooser->settings().directoryChooser || fileChooser->settings().allowsDirectoryUpload;
 #else
     params.directory = false;
 #endif
+    params.extractDirectory = fileChooser->settings().allowsDirectoryUpload;
+    params.saveAs = fileChooser->settings().saveAs;
     params.acceptTypes = fileChooser->settings().acceptTypes();
     params.selectedFiles = fileChooser->settings().selectedFiles;
     if (params.selectedFiles.size() > 0)

@@ -41,6 +41,9 @@
 #include "V8PerContextData.h"
 #include "V8WorkerContextEventListener.h"
 
+#include "third_party/node/src/node.h"
+#include "third_party/node/src/req_wrap.h"
+
 namespace WebCore {
 
 class V8WrapperInstantiationScope {
@@ -137,6 +140,10 @@ PassRefPtr<EventListener> V8DOMWrapper::getEventListener(v8::Local<v8::Value> va
         return 0;
     if (lookup == ListenerFindOnly)
         return V8EventListenerList::findWrapper(value, isAttribute);
+    if (context == node::g_context) {
+        DOMWindow* window = toDOMWindow(context);
+        context = ScriptController::mainWorldContext(window->frame());
+    }
     if (isWrapperOfType(toInnerGlobalObject(context), &V8DOMWindow::info))
         return V8EventListenerList::findOrCreateWrapper<V8EventListener>(value, isAttribute);
 #if ENABLE(WORKERS)
