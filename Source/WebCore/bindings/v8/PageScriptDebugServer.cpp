@@ -68,8 +68,7 @@ static Frame* retrieveFrameWithGlobalObjectCheck(v8::Handle<v8::Context> context
         if (val_window->IsUndefined())
             return 0;
         v8::Local<v8::Object> window = v8::Local<v8::Object>::Cast(val_window);
-        global = V8DOMWrapper::lookupDOMWrapper(V8DOMWindow::GetTemplate(),
-                                                window);
+        global = window->FindInstanceInPrototypeChain(V8DOMWindow::GetTemplate());
         if (global.IsEmpty())
             return 0;
         DOMWindow* win = V8DOMWindow::toNative(global);

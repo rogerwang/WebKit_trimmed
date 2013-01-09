@@ -201,7 +201,6 @@ static void internalAddMessage(Page* page, MessageType type, MessageLevel level,
 
     String message;
     bool gotMessage = arguments->getFirstArgumentAsString(message);
-    InspectorInstrumentation::addMessageToConsole(page, ConsoleAPIMessageSource, type, level, message, state, arguments.release());
 
     if (!page->settings() || page->settings()->privateBrowsingEnabled())
         return;
@@ -237,6 +236,7 @@ static void internalAddMessage(Page* page, MessageType type, MessageLevel level,
             printf("\t%s\n", functionName.utf8().data());
         }
     }
+    InspectorInstrumentation::addMessageToConsole(page, ConsoleAPIMessageSource, type, level, message, state, arguments.release());
 }
 
 void Console::debug(ScriptState* state, PassRefPtr<ScriptArguments> arguments)

@@ -46,6 +46,9 @@
 #include "WorkerContext.h"
 #include "XMLHttpRequest.h"
 
+#include "third_party/node/src/node.h"
+#include "third_party/node/src/req_wrap.h"
+
 namespace WebCore {
 
 v8::Handle<v8::Value> V8XMLHttpRequest::constructorCallbackCustom(const v8::Arguments& args)
@@ -54,7 +57,10 @@ v8::Handle<v8::Value> V8XMLHttpRequest::constructorCallbackCustom(const v8::Argu
 
     RefPtr<SecurityOrigin> securityOrigin;
     if (context->isDocument()) {
-        if (DOMWrapperWorld* world = worldForEnteredContextIfIsolated())
+        v8::Local<v8::Context> v8context = v8::Context::GetEntered();
+        if (v8context == node::g_context)
+            securityOrigin = context->securityOrigin();
+        else if (DOMWrapperWorld* world = worldForEnteredContextIfIsolated())
             securityOrigin = world->isolatedWorldSecurityOrigin();
     }
 

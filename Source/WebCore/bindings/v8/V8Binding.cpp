@@ -243,8 +243,7 @@ DOMWindow* toDOMWindow(v8::Handle<v8::Context> context)
         v8::Local<v8::Value> val_window = global->Get(v8::String::New("window"));
         ASSERT (!val_window->IsUndefined());
         v8::Local<v8::Object> window = v8::Local<v8::Object>::Cast(val_window);
-        global = V8DOMWrapper::lookupDOMWrapper(V8DOMWindow::GetTemplate(),
-                                                window);
+        global = window->FindInstanceInPrototypeChain(V8DOMWindow::GetTemplate());
         ASSERT (!global.IsEmpty());
         return V8DOMWindow::toNative(global);
     }
