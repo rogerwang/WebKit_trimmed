@@ -159,6 +159,9 @@ namespace WebCore {
         // Scale factor of this frame with respect to the container.
         float frameScaleFactor() const;
 
+        void setNodeJS(bool node) { m_nodejs = node; }
+        bool isNodeJS() const { return m_nodejs; }
+
 #if USE(ACCELERATED_COMPOSITING)
         void deviceOrPageScaleFactorChanged();
 #endif
@@ -237,6 +240,8 @@ namespace WebCore {
 #endif
 
         bool m_inViewSourceMode;
+
+        bool m_nodejs;
 
 #if USE(TILED_BACKING_STORE)
     // FIXME: The tiled backing store belongs in FrameView, not Frame.
