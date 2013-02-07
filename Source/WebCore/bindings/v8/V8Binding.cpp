@@ -235,22 +235,28 @@ v8::Handle<v8::Object> toInnerGlobalObject(v8::Handle<v8::Context> context)
     return v8::Handle<v8::Object>::Cast(context->Global()->GetPrototype());
 }
 
+static DOMWindow* DOMWindowFromNode()
+{
+    v8::Context::Scope context_scope(node::g_context);
+    v8::Handle<v8::Object> global = node::g_context->Global();
+    v8::Local<v8::Value> val_window = global->Get(v8::String::New("window"));
+    ASSERT (!val_window->IsUndefined());
+    v8::Local<v8::Object> window = v8::Local<v8::Object>::Cast(val_window);
+    global = window->FindInstanceInPrototypeChain(V8DOMWindow::GetTemplate());
+    ASSERT (!global.IsEmpty());
+    return V8DOMWindow::toNative(global);
+}
+
 DOMWindow* toDOMWindow(v8::Handle<v8::Context> context)
 {
     if (context == node::g_context) {
-        v8::Context::Scope context_scope(node::g_context);
-        v8::Handle<v8::Object> global = node::g_context->Global();
-        v8::Local<v8::Value> val_window = global->Get(v8::String::New("window"));
-        ASSERT (!val_window->IsUndefined());
-        v8::Local<v8::Object> window = v8::Local<v8::Object>::Cast(val_window);
-        global = window->FindInstanceInPrototypeChain(V8DOMWindow::GetTemplate());
-        ASSERT (!global.IsEmpty());
-        return V8DOMWindow::toNative(global);
+        return DOMWindowFromNode();
     }
     v8::Handle<v8::Object> global = context->Global();
     ASSERT(!global.IsEmpty());
     global = global->FindInstanceInPrototypeChain(V8DOMWindow::GetTemplate());
-    ASSERT(!global.IsEmpty());
+    if (global.IsEmpty())
+        return DOMWindowFromNode();
     return V8DOMWindow::toNative(global);
 }
 

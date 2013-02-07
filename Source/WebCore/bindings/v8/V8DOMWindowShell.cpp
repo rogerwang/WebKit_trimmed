@@ -284,8 +284,8 @@ void V8DOMWindowShell::createContext()
 
 #if ENABLE(JAVASCRIPT_I18N_API)
     // Enables experimental i18n API in V8.
-    if (RuntimeEnabledFeatures::javaScriptI18NAPIEnabled())
-        ScriptController::registerExtensionIfNeeded(v8_i18n::Extension::get());
+    //    if (RuntimeEnabledFeatures::javaScriptI18NAPIEnabled())
+    //    ScriptController::registerExtensionIfNeeded(v8_i18n::Extension::get());
 #endif
 
     // Dynamically tell v8 about our extensions now.
