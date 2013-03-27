@@ -53,6 +53,8 @@ struct FileChooserSettings {
     bool allowsMultipleFiles;
 #if ENABLE(DIRECTORY_UPLOAD)
     bool allowsDirectoryUpload;
+    bool directoryChooser;
+    bool saveAs;
 #endif
     Vector<String> acceptMIMETypes;
     Vector<String> acceptFileExtensions;

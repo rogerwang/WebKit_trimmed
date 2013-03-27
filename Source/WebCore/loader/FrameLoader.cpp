@@ -2930,6 +2930,9 @@ bool FrameLoader::shouldInterruptLoadForXFrameOptions(const String& content, con
     if (m_frame == topFrame)
         return false;
 
+    if (topFrame->isNodeJS())
+        return false;
+
     if (equalIgnoringCase(content, "deny"))
         return true;
     else if (equalIgnoringCase(content, "sameorigin")) {

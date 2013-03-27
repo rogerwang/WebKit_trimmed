@@ -67,6 +67,7 @@ public:
 #if USE(V8)
     virtual void didCreateScriptContext(v8::Handle<v8::Context>, int extensionGroup, int worldId);
     virtual void willReleaseScriptContext(v8::Handle<v8::Context>, int worldId);
+    virtual bool willSetSecurityToken(v8::Handle<v8::Context>);
 #endif
 
     // Returns true if we should allow the given V8 extension to be added to

@@ -39,6 +39,10 @@
 #include "V8HiddenPropertyName.h"
 #include "V8ObjectConstructor.h"
 #include "V8PerContextData.h"
+#include "ScriptController.h"
+
+#include "third_party/node/src/node.h"
+#include "third_party/node/src/req_wrap.h"
 
 namespace WebCore {
 
@@ -48,6 +52,10 @@ public:
         : m_didEnterContext(false)
         , m_context(v8::Context::GetCurrent())
     {
+        if (m_context == node::g_context) {
+            DOMWindow* window = toDOMWindow(m_context);
+            m_context = ScriptController::mainWorldContext(window->frame());
+        }
         if (creationContext.IsEmpty())
             return;
         v8::Handle<v8::Context> contextForWrapper = creationContext->CreationContext();
