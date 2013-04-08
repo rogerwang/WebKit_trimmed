@@ -271,6 +271,9 @@ public:
     void setCapture(const String& value);
 #endif
 
+    String nwWorkingDir() const;
+    void setNwWorkingDir(const String& value);
+
     static const int maximumLength;
 
     unsigned height() const;
