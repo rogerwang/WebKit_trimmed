@@ -160,7 +160,8 @@ namespace WebCore {
         float frameScaleFactor() const;
 
         void setNodeJS(bool node) { m_nodejs = node; }
-        bool isNodeJS() const { return m_nodejs; }
+        bool isNodeJS() const;
+        bool isNwDisabledChildFrame() const;
 
 #if USE(ACCELERATED_COMPOSITING)
         void deviceOrPageScaleFactorChanged();
