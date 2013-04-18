@@ -271,8 +271,8 @@ public:
     void setCapture(const String& value);
 #endif
 
-    String nwWorkingDir() const;
-    void setNwWorkingDir(const String& value);
+    String nwworkingdir() const;
+    void setNwworkingdir(const String& value);
 
     static const int maximumLength;
 

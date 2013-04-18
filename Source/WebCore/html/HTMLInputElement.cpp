@@ -1806,12 +1806,12 @@ void HTMLInputElement::setCapture(const String& value)
 
 #endif
 
-String HTMLInputElement::nwWorkingDir() const
+String HTMLInputElement::nwworkingdir() const
 {
     return fastGetAttribute(nwworkingdirAttr);
 }
 
-void HTMLInputElement::setNwWorkingDir(const String& value)
+void HTMLInputElement::setNwworkingdir(const String& value)
 {
     setAttribute(nwworkingdirAttr, value);
 }
