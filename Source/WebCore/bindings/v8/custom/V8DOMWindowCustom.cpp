@@ -145,6 +145,26 @@ v8::Handle<v8::Value> WindowSetTimeoutImpl(const v8::Arguments& args, bool singl
     return v8Integer(id, args.GetIsolate());
 }
 
+v8::Handle<v8::Value> V8DOMWindow::parentAttrGetterCustom(v8::Local<v8::String> name, const v8::AccessorInfo& info)
+{
+    DOMWindow* imp = V8DOMWindow::toNative(info.Holder());
+    Frame* frame = imp->frame();
+    if (frame->isNwFakeTop())
+        return toV8Fast(imp, info, imp);
+    else
+        return toV8Fast(imp->parent(), info, imp);
+}
+
+v8::Handle<v8::Value> V8DOMWindow::topAttrGetterCustom(v8::Local<v8::String> name, const v8::AccessorInfo& info)
+{
+    DOMWindow* imp = V8DOMWindow::toNative(info.Holder());
+    Frame* frame = imp->frame();
+    if (frame->isNwFakeTop())
+        return toV8Fast(imp, info, imp);
+    else
+        return toV8Fast(imp->top(), info, imp);
+}
+
 v8::Handle<v8::Value> V8DOMWindow::eventAttrGetterCustom(v8::Local<v8::String> name, const v8::AccessorInfo& info)
 {
     v8::Handle<v8::Object> holder = info.This()->FindInstanceInPrototypeChain(V8DOMWindow::GetTemplate(info.GetIsolate(), worldTypeInMainThread(info.GetIsolate())));

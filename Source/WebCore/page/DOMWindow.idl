@@ -134,8 +134,8 @@
     [Replaceable, DoNotCheckSecurityOnGetter] readonly attribute  DOMWindow frames;
 
     [Replaceable, DoNotCheckSecurityOnGetter, V8CustomSetter] readonly attribute DOMWindow opener;
-    [Replaceable, DoNotCheckSecurityOnGetter] readonly attribute DOMWindow parent;
-    [DoNotCheckSecurityOnGetter, V8Unforgeable] readonly attribute DOMWindow top;
+    [Replaceable, DoNotCheckSecurityOnGetter, V8CustomGetter] readonly attribute DOMWindow parent;
+    [DoNotCheckSecurityOnGetter, V8Unforgeable, V8CustomGetter] readonly attribute DOMWindow top;
 
     // DOM Level 2 AbstractView Interface
     readonly attribute Document document;
