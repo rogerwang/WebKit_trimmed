@@ -61,6 +61,7 @@
 #include "V8GCForContextDispose.h"
 #include "V8HiddenPropertyName.h"
 #include "V8HTMLCollection.h"
+#include "V8HTMLFrameElement.h"
 #include "V8Node.h"
 #include "V8Utilities.h"
 #include "WindowFeatures.h"
@@ -159,11 +160,25 @@ v8::Handle<v8::Value> V8DOMWindow::topAttrGetterCustom(v8::Local<v8::String> nam
 {
     DOMWindow* imp = V8DOMWindow::toNative(info.Holder());
     Frame* frame = imp->frame();
-    if (frame->isNwFakeTop())
-        return toV8Fast(imp, info, imp);
-    else
-        return toV8Fast(imp->top(), info, imp);
+    for (Frame* f = frame; f; f = f->tree()->parent()) {
+        if (f->isNwFakeTop())
+            return toV8Fast(f->document()->domWindow(), info, imp);
+    }
+    return toV8Fast(imp->top(), info, imp);
 }
+
+v8::Handle<v8::Value> V8DOMWindow::frameElementAttrGetterCustom(v8::Local<v8::String> name, const v8::AccessorInfo& info)
+{
+    DOMWindow* imp = V8DOMWindow::toNative(info.Holder());
+    Frame* frame = imp->frame();
+    if (frame->isNwFakeTop())
+        return v8::Handle<v8::Value>(v8Null(info.GetIsolate()));
+    if (!BindingSecurity::shouldAllowAccessToNode(BindingState::instance(), imp->frameElement()))
+        return v8::Handle<v8::Value>(v8Null(info.GetIsolate()));
+
+    return toV8Fast(imp->frameElement(), info, imp);
+}
+
 
 v8::Handle<v8::Value> V8DOMWindow::eventAttrGetterCustom(v8::Local<v8::String> name, const v8::AccessorInfo& info)
 {

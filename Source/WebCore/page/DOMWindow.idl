@@ -62,7 +62,7 @@
 
     DOMSelection getSelection();
 
-    readonly attribute [CheckSecurityForNode] Element frameElement;
+    readonly attribute [CheckSecurityForNode, V8CustomGetter] Element frameElement;
 
     [DoNotCheckSecurity, CallWith=ScriptExecutionContext] void focus();
     [DoNotCheckSecurity] void blur();
